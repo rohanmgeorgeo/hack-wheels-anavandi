@@ -97,7 +97,7 @@ export interface SummaryValidation {
   separation_note: string;
 }
 
-export type View = 'operations' | 'replay';
+export type View = 'operations' | 'replay' | 'issues';
 
 export interface ReplaySample {
   t: number;
@@ -178,4 +178,60 @@ export interface DetectorSummary {
   counts: SummaryCounts;
   validation: SummaryValidation;
   notes: string[];
+}
+
+export interface RoadIssueObservation {
+  observation_id: string;
+  session_id: string;
+  event_class: EventClass;
+  event_time: number | null;
+  provenance: string;
+  severity_score: number;
+  confidence_score: number;
+  latitude: number;
+  longitude: number;
+  start_row: number;
+  peak_row: number | null;
+}
+
+export interface RoadIssue {
+  issue_id: string;
+  center: { latitude: number; longitude: number };
+  anchor: { latitude: number; longitude: number };
+  observation_count: number;
+  distinct_session_count: number;
+  session_ids: string[];
+  class_counts: Partial<Record<EventClass, number>>;
+  severity: { mean: number; max: number };
+  confidence: { mean: number; max: number };
+  first_observation_time: number | null;
+  last_observation_time: number | null;
+  observations: RoadIssueObservation[];
+}
+
+export interface RoadIssuesSummary {
+  accepted_observations_total: number;
+  accepted_gps_observations: number;
+  accepted_without_gps: number;
+  suppressed_candidates_total: number;
+  issue_count: number;
+  multi_observation_issue_count: number;
+  multi_session_issue_count: number;
+  cluster_size_distribution: Record<string, number>;
+  session_combinations: Record<string, number>;
+  min_cross_session_distance_meters: number | null;
+  cross_session_note: string;
+}
+
+export interface RoadIssuesFile {
+  dataset: string;
+  association_method: {
+    type: string;
+    distance_metric: string;
+    radius_meters: number;
+    clusters_accepted_gps_only: boolean;
+    note: string;
+  };
+  summary: RoadIssuesSummary;
+  issues: RoadIssue[];
 }

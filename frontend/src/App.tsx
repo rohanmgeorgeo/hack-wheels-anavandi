@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Header from './components/Header';
 import JourneyReplay from './components/JourneyReplay';
 import OperationsView from './components/OperationsView';
+import RoadIssuesView from './components/RoadIssuesView';
 import type { View } from './types';
 
 export default function App() {
@@ -12,7 +13,9 @@ export default function App() {
     <div className="app">
       <Header view={view} onViewChange={setView} />
 
-      {view === 'operations' ? <OperationsView /> : <JourneyReplay />}
+      {view === 'operations' ? <OperationsView /> : null}
+      {view === 'replay' ? <JourneyReplay /> : null}
+      {view === 'issues' ? <RoadIssuesView /> : null}
 
       <footer className="app-footer">
         <p>

@@ -46,7 +46,7 @@ spatial issue association          (SQLite + road_issues.json)
 React + TypeScript frontend        frontend/
         │  imports the JSON at build time
         ▼
-Leaflet / OpenStreetMap map        "GPS Event View" + "Journey Replay"
+Leaflet / OpenStreetMap map        "GPS Event View" + "Journey Replay" + "Road Issues"
 ```
 
 * **No backend, no database server, no authentication.** SQLite is used as a
@@ -280,7 +280,8 @@ Round 2 technical step — **working core, not a finished product**:
 * ✅ Recorded RoadSens Journey Replay (real samples + real detector decisions).
 * ✅ Local SQLite observation store and prototype proximity-based spatial issue
   association (`road_issues.json`).
+* ✅ **Road Issues** dashboard view (proximity-based, not map matching; factual
+  single-session evidence, zero cross-session claims).
 * ✅ Offline-capable analytical UI.
-* ⬜ Road-issue screen in the dashboard (next task).
 * ⬜ Road-segment map matching.
 * ⬜ Live phone sensing and a real fleet backend.

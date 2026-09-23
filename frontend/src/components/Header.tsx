@@ -6,6 +6,12 @@ interface HeaderProps {
   onViewChange: (view: View) => void;
 }
 
+const TABS: Array<{ key: View; label: string }> = [
+  { key: 'operations', label: 'Operations' },
+  { key: 'replay', label: 'Journey Replay' },
+  { key: 'issues', label: 'Road Issues' },
+];
+
 export default function Header({ view, onViewChange }: HeaderProps) {
   return (
     <header className="app-header">
@@ -21,18 +27,15 @@ export default function Header({ view, onViewChange }: HeaderProps) {
 
       <div className="header-right">
         <nav className="view-tabs" aria-label="Dashboard views">
-          <button
-            className={`view-tab${view === 'operations' ? ' active' : ''}`}
-            onClick={() => onViewChange('operations')}
-          >
-            Operations
-          </button>
-          <button
-            className={`view-tab${view === 'replay' ? ' active' : ''}`}
-            onClick={() => onViewChange('replay')}
-          >
-            Journey Replay
-          </button>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`view-tab${view === tab.key ? ' active' : ''}`}
+              onClick={() => onViewChange(tab.key)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
         <div className="header-badges">
           <span className="badge badge-accent">Prototype</span>
