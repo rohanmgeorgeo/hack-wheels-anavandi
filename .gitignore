@@ -1,0 +1,15 @@
+# Dataset — local only
+data/raw/
+data/extracted/
+
+# Dependencies / builds
+node_modules/
+dist/
+.next/
+
+# Environment / secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
