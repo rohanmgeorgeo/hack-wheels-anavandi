@@ -7,9 +7,10 @@ intelligence. A bus already carries accelerometers, gyroscopes and GPS; this
 project reads that signal and reports **where the road surface disturbs the
 vehicle**, without installing any new hardware.
 
-This repository contains the **Hackathon Round 1 vertical slice**: an
-explainable Python detector over a small public dataset plus a React
-operations dashboard that visualises the detector's real output on a map.
+This repository contains the **Hackathon Round 2 prototype**: an explainable
+Python detector over a small public dataset, a local observation store, a
+proximity-based road-issue aggregation, and a React operations dashboard that
+visualises the detector's real output across three linked views.
 
 ---
 
@@ -21,9 +22,10 @@ vehicles are slow to cover a city. Public buses, however, drive every route
 every day. RoadPulse treats that existing fleet as a **passive, distributed
 road-condition sensing network**.
 
-The first slice is intentionally narrow and honest: detect events from sensor
-data, explain why each one was accepted or suppressed, and map the ones that
-have real GPS.
+The prototype is intentionally narrow and honest: detect events from recorded
+sensor data, explain why each one was accepted or suppressed, group the ones
+with real GPS into spatial issues, and let a judge trace one real observation
+from sensor evidence to its road issue.
 
 ---
 
@@ -60,10 +62,11 @@ Repository layout:
 | Path | Purpose |
 | --- | --- |
 | `processor/` | Loader, feature derivation and the explainable detector. |
-| `scripts/` | `prepare_demo_data.py`, `run_detector.py`, `export_replay_data.py` and `build_observation_store.py`. |
+| `scripts/` | `prepare_demo_data.py`, `run_detector.py`, `export_replay_data.py`, `build_observation_store.py`, `verify_round2.py`. |
 | `data/demo/` | Tracked demo subset, source CSVs and generated `processed/` outputs. |
 | `tests/` | Python unit/integration tests. |
-| `frontend/` | Vite + React + TypeScript + Leaflet dashboard. |
+| `frontend/` | Vite + React + TypeScript + Leaflet dashboard (`frontend/scripts/` holds dependency-free data validators). |
+| `docs/` | Judge-readable architecture notes (`docs/architecture.md`). |
 
 ---
 
@@ -81,6 +84,19 @@ This project uses the **public RoadSens-4M** dataset as raw input. The data was
 ---
 
 ## Setup and run
+
+### One-command verification (recommended)
+
+From the repository root (requires `npm install` once in `frontend/`):
+
+```bash
+python3 scripts/verify_round2.py
+```
+
+Runs the Python tests, the deterministic store/replay rebuild checks, the
+frontend data validations, TypeScript typecheck and the production build, then
+prints a factual summary derived from the generated JSON. It stops on the first
+real failure and returns non-zero. No internet is required.
 
 ### 1. Python pipeline (optional — outputs are already committed)
 
@@ -203,10 +219,16 @@ In the current demo subset: **44 accepted events, 98 suppressed candidates**
   (0.9649) equals the majority-class baseline (0.9649), so the classifier
   defaults to the majority class instead of claiming an unsupported Pothole.
   This is reported in the dashboard, not hidden.
-* **No true map matching.** The map plots real GPS points; the optional
-  connections are straight event-order lines, **not** road-segment matching.
+* **No cross-session corroboration.** The demo sessions cover different
+  locations, so at the 10 m association radius there are **0 multi-session
+  issues**. Repeated-session evidence is a fleet-data capability, not a
+  demonstrated result here.
+* **Proximity association, not map matching.** Issues are grouped by a simple
+  haversine radius; this is **not** road-network or road-segment matching.
 * **No fabricated GPS.** Events without GPS (the normal-road session) are never
-  plotted at invented coordinates.
+  plotted at invented coordinates and never clustered.
+* **Recorded data, not live buses.** Journey Replay plays back recorded
+  RoadSens-4M sessions; no physical bus is connected at runtime.
 * **Prototype scores.** Severity and confidence are analytical scores, not
   official ratings.
 
@@ -227,8 +249,8 @@ change the detector) and writes:
 * `data/demo/processed/roadpulse.db` — a local **SQLite** prototype store
   (Python standard library `sqlite3`) with `journeys`, `observations`,
   `suppressed_candidates`, `road_issues` and `issue_observations` tables.
-* `data/demo/processed/road_issues.json` — a compact aggregation for the next
-  dashboard feature.
+* `data/demo/processed/road_issues.json` — a compact aggregation consumed by the
+  **Road Issues** dashboard view.
 
 **Spatial issue clustering** (prototype proximity association, **not**
 road-network map matching): accepted observations that have **real GPS** are
@@ -247,6 +269,28 @@ Truthfulness rules:
 * on the current demo data there are **zero** cross-session clusters, and the
   payload says so explicitly rather than inventing corroboration;
 * SQLite here is **local prototype persistence**, not a production database.
+
+---
+
+## Road Issues & exact traceability
+
+The **Road Issues** view visualises `road_issues.json`: one map marker per
+spatial issue centre, an explainable issue list, and a selected-issue panel with
+the real member observations. Every count is factual — “N observations in M
+recorded sessions” — never “N confirmations” or “N buses”. On the current subset
+there are **0 cross-session issues**, and the UI states that plainly.
+
+**Traceability** links an accepted event, its Journey Replay decision and its
+spatial issue by the exact stable identity
+`obs:<session_id>:<event_class>:<start_row>:<peak_row>`. Matching is exact;
+there is no nearest-neighbour linking. A header **Demo Flow** button opens a
+recorded Session 4 replay at 4x and guides the path: watch decisions → open an
+accepted observation → trace it to its spatial issue → inspect the source event
+→ replay at the event. It also prompts showing a suppressed candidate, which can
+never be traced to a road issue.
+
+**GPS-less accepted events** (the normal-road session) are stored but never
+placed on a map and never enter spatial clustering; no coordinates are invented.
 
 ---
 
@@ -272,19 +316,28 @@ Python pipeline; no analytical values in the UI are invented.
 
 ## Current prototype status
 
-Round 2 technical step — **working core, not a finished product**:
+Round 2 prototype — **working core, not a finished product**.
 
-* ✅ Explainable Python detector with 67 passing tests.
-* ✅ Dashboard with real metrics, GPS event map, event details, suppression and
-  transparency panels.
-* ✅ Recorded RoadSens Journey Replay (real samples + real detector decisions).
-* ✅ Local SQLite observation store and prototype proximity-based spatial issue
+### WORKING NOW
+
+* Explainable, deterministic Python detector with 67 passing tests.
+* Operations dashboard: real metrics, GPS event map, event details, suppression
+  and transparency panels.
+* Recorded RoadSens Journey Replay: real samples + real detector decisions
+  (accepted and suppressed).
+* Local SQLite observation store and prototype proximity-based spatial issue
   association (`road_issues.json`).
-* ✅ **Road Issues** dashboard view (proximity-based, not map matching; factual
-  single-session evidence, zero cross-session claims).
-* ✅ End-to-end traceability: an accepted event, its Journey Replay decision and
-  its spatial issue are linked by the exact stable observation identity
-  (`obs:<session>:<class>:<start_row>:<peak_row>`), with a guided Demo Flow.
-* ✅ Offline-capable analytical UI.
-* ⬜ Road-segment map matching.
-* ⬜ Live phone sensing and a real fleet backend.
+* **Road Issues** dashboard view: proximity-based, factual single-session
+  evidence, zero cross-session claims.
+* End-to-end traceability by exact stable observation identity, with a guided
+  **Demo Flow**.
+* Offline-capable analytical UI and a one-command verifier
+  (`python3 scripts/verify_round2.py`).
+
+### NEXT / FUTURE (not implemented)
+
+* Live phone / bus ingestion.
+* Genuine repeated-session evidence when source data revisits the same
+  locations.
+* True road-network map matching.
+* Fleet backend and maintenance integration.

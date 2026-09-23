@@ -279,6 +279,10 @@ export default function JourneyReplay({
             <li>Open an accepted observation</li>
             <li>Trace it to its spatial issue</li>
           </ol>
+          <p className="demo-note">
+            Also show one suppressed candidate — RoadPulse does not turn every
+            shake into a road issue.
+          </p>
           <TracePipeline
             stage={latest && latest.decision === 'accepted' ? 'observation' : 'decision'}
             compact
