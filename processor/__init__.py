@@ -1,7 +1,8 @@
 """RoadPulse data preparation package.
 
-Exposes the RoadSens-4M CSV loader and the explainable sensor-feature
-derivations used to normalize the demo subset.
+Exposes the RoadSens-4M CSV loader, the explainable sensor-feature
+derivations used to normalize the demo subset, and the explainable
+road-event detector.
 """
 
 from .loader import (
@@ -14,6 +15,13 @@ from .loader import (
     parse_float,
 )
 from .features import DERIVED_FEATURE_NAMES, derive_features
+from .detector import (
+    BUMP,
+    POTHOLE,
+    ROUGHNESS,
+    DetectorConfig,
+    detect_sessions,
+)
 
 __all__ = [
     "ANOMALY_SCHEMA",
@@ -25,4 +33,9 @@ __all__ = [
     "parse_float",
     "DERIVED_FEATURE_NAMES",
     "derive_features",
+    "BUMP",
+    "POTHOLE",
+    "ROUGHNESS",
+    "DetectorConfig",
+    "detect_sessions",
 ]

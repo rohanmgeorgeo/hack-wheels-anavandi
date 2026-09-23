@@ -1,0 +1,167 @@
+{
+  "dataset": "RoadSens-4M",
+  "subset": "roadpulse-demo",
+  "detector": "processor/detector.py",
+  "reference_session": "9",
+  "config": {
+    "sampling_hz": 100.0,
+    "impact_peak_window_seconds": 0.02,
+    "impact_merge_gap_seconds": 0.08,
+    "impact_context_seconds": 0.1,
+    "impact_rms_window_seconds": 0.2,
+    "turning_window_seconds": 0.5,
+    "horizontal_window_seconds": 0.2,
+    "roughness_window_seconds": 1.0,
+    "roughness_min_duration_seconds": 1.0,
+    "roughness_gap_seconds": 0.3,
+    "roughness_max_impact_overlap": 0.6,
+    "candidate_percentile": 95.0,
+    "accept_percentile": 99.0,
+    "turning_percentile": 99.0,
+    "horizontal_percentile": 99.0,
+    "roughness_percentile": 99.0,
+    "severe_ratio": 2.5,
+    "reference_duration_seconds": 0.3
+  },
+  "baseline": {
+    "vertical_peak": {
+      "count": 5214,
+      "median": 0.639731,
+      "mad": 0.224707,
+      "p95": 1.427018,
+      "p99": 2.099871,
+      "p99_5": 2.283298,
+      "min": 0.033962,
+      "max": 2.971978
+    },
+    "turning": {
+      "count": 5214,
+      "median": 0.036877,
+      "mad": 0.005308,
+      "p95": 0.07389,
+      "p99": 0.147816,
+      "p99_5": 0.154738,
+      "min": 0.020103,
+      "max": 0.160508
+    },
+    "horizontal": {
+      "count": 5214,
+      "median": 0.900103,
+      "mad": 0.140918,
+      "p95": 1.414193,
+      "p99": 1.717138,
+      "p99_5": 1.770559,
+      "min": 0.450361,
+      "max": 2.041826
+    },
+    "roughness": {
+      "count": 5214,
+      "median": 0.550317,
+      "mad": 0.046574,
+      "p95": 0.669303,
+      "p99": 0.868228,
+      "p99_5": 0.880409,
+      "min": 0.37199,
+      "max": 0.923686
+    }
+  },
+  "thresholds": {
+    "candidate_peak": 1.427018,
+    "accept_peak": 2.099871,
+    "turning": 0.147816,
+    "horizontal": 1.717138,
+    "roughness": 0.868228
+  },
+  "classifier": {
+    "features": [
+      "peak_abs_vertical",
+      "local_rms",
+      "duration_seconds",
+      "rebound_ratio"
+    ],
+    "feature_means": [
+      2.147543,
+      0.86472,
+      0.109825,
+      0.447578
+    ],
+    "feature_scales": [
+      0.771268,
+      0.240548,
+      0.148436,
+      0.232053
+    ],
+    "centroids": {
+      "Pothole": [
+        0.062531,
+        0.656634,
+        -0.23461,
+        0.382801
+      ],
+      "Bump": [
+        -0.002274,
+        -0.023878,
+        0.008531,
+        -0.01392
+      ]
+    },
+    "training_counts": {
+      "Pothole": 2,
+      "Bump": 55
+    },
+    "class_priors": {
+      "Pothole": 0.035088,
+      "Bump": 0.964912
+    },
+    "decision_rule": "prior_corrected_nearest_centroid"
+  },
+  "counts": {
+    "accepted_total": 44,
+    "accepted_by_class": {
+      "Pothole": 0,
+      "Bump": 41,
+      "Sustained Roughness": 3
+    },
+    "suppressed_total": 98,
+    "suppressed_by_reason": {
+      "turning": 2,
+      "horizontal_motion": 30,
+      "noise": 66
+    },
+    "candidates_total": 139
+  },
+  "validation": {
+    "predictions_agreeing_with_supplied_labels": 20,
+    "predictions_disagreeing_with_supplied_labels": 1,
+    "confusion_matrix": {
+      "Pothole->Pothole": 0,
+      "Pothole->Bump": 1,
+      "Bump->Pothole": 0,
+      "Bump->Bump": 20
+    },
+    "disagreements": [
+      {
+        "session_id": "4",
+        "peak_row": 1222,
+        "predicted": "Bump",
+        "supplied_label": "Pothole"
+      }
+    ],
+    "leave_one_out_accuracy": 0.9649,
+    "labelled_candidates": 57,
+    "class_counts_in_labelled_candidates": {
+      "Pothole": 2,
+      "Bump": 55
+    },
+    "majority_class_baseline_accuracy": 0.9649,
+    "pothole_bump_separation": "weak",
+    "separation_note": "Pothole vs Bump separation on this 4-session demo subset is weak: leave-one-out accuracy 0.9649 vs majority-class baseline 0.9649. The classifier therefore defaults to the majority class rather than claiming a Pothole it cannot support. This is reported honestly, not hidden."
+  },
+  "notes": [
+    "Pothole and Bump labels are supplied by the RoadSens-4M dataset.",
+    "Sustained Roughness is a derived_heuristic, not a dataset label.",
+    "Normal road is the baseline state, never an event class.",
+    "Severity and confidence are prototype 0-100 scores, not official ratings.",
+    "Horizontal acceleration is an unsigned lateral/longitudinal proxy, not true signed braking acceleration."
+  ]
+}
