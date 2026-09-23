@@ -308,6 +308,7 @@ placed on a map and never enter spatial clustering; no coordinates are invented.
 
 * **ChatGPT** — architecture, review and task planning.
 * **OpenCode with DeepSeek V4.1 Flash** — implementation assistance.
+* **Gamma** — presentation layout and visual generation.
 
 All detector logic, thresholds and statistics come from the project's own
 Python pipeline; no analytical values in the UI are invented.
@@ -341,3 +342,4 @@ Round 2 prototype — **working core, not a finished product**.
   locations.
 * True road-network map matching.
 * Fleet backend and maintenance integration.
+
