@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import EventDetails from './EventDetails';
 import EventMap from './EventMap';
@@ -7,9 +7,20 @@ import Legend from './Legend';
 import SummaryMetrics from './SummaryMetrics';
 import TransparencyPanel from './TransparencyPanel';
 import { acceptedEvents, gpsEvents } from '../data';
-import type { EventRecord } from '../types';
+import { findIssueForEvent, observationIdForEvent } from '../traceability';
+import type { EventRecord, IssueTrace } from '../types';
 
-export default function OperationsView() {
+interface OperationsViewProps {
+  selectedEventId: string | null;
+  onSelectEvent: (event: EventRecord) => void;
+  onViewIssue: (issueId: string, trace: IssueTrace) => void;
+}
+
+export default function OperationsView({
+  selectedEventId,
+  onSelectEvent,
+  onViewIssue,
+}: OperationsViewProps) {
   const defaultEvent = useMemo<EventRecord | null>(() => {
     const ranked = [...gpsEvents].sort(
       (a, b) => b.severity_score - a.severity_score,
@@ -17,8 +28,29 @@ export default function OperationsView() {
     return ranked[0] ?? acceptedEvents[0] ?? null;
   }, []);
 
-  const [selected, setSelected] = useState<EventRecord | null>(defaultEvent);
+  const selected = useMemo<EventRecord | null>(() => {
+    if (selectedEventId) {
+      const found = acceptedEvents.find(
+        (event) => observationIdForEvent(event) === selectedEventId,
+      );
+      if (found) return found;
+    }
+    return defaultEvent;
+  }, [selectedEventId, defaultEvent]);
+
   const [showRoutes, setShowRoutes] = useState(true);
+
+  const linkedIssue = selected ? findIssueForEvent(selected) : null;
+
+  const handleViewIssue = useCallback(() => {
+    if (!selected || !linkedIssue) return;
+    onViewIssue(linkedIssue.issue_id, {
+      issueId: linkedIssue.issue_id,
+      source: 'operations',
+      sessionId: selected.session_id,
+      eventTime: selected.peak_time ?? selected.start_time,
+    });
+  }, [selected, linkedIssue, onViewIssue]);
 
   return (
     <main className="app-main">
@@ -47,7 +79,7 @@ export default function OperationsView() {
           <EventMap
             events={gpsEvents}
             selected={selected}
-            onSelect={setSelected}
+            onSelect={onSelectEvent}
             showRoutes={showRoutes}
           />
 
@@ -62,7 +94,11 @@ export default function OperationsView() {
         </section>
 
         <aside className="side-column">
-          <EventDetails event={selected} />
+          <EventDetails
+            event={selected}
+            linkedIssue={linkedIssue}
+            onViewIssue={linkedIssue ? handleViewIssue : null}
+          />
         </aside>
       </div>
 

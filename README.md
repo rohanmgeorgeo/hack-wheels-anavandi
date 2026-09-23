@@ -282,6 +282,9 @@ Round 2 technical step — **working core, not a finished product**:
   association (`road_issues.json`).
 * ✅ **Road Issues** dashboard view (proximity-based, not map matching; factual
   single-session evidence, zero cross-session claims).
+* ✅ End-to-end traceability: an accepted event, its Journey Replay decision and
+  its spatial issue are linked by the exact stable observation identity
+  (`obs:<session>:<class>:<start_row>:<peak_row>`), with a guided Demo Flow.
 * ✅ Offline-capable analytical UI.
 * ⬜ Road-segment map matching.
 * ⬜ Live phone sensing and a real fleet backend.

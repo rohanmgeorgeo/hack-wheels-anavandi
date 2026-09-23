@@ -1,16 +1,36 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import DecisionCard from './DecisionCard';
 import ReplayChart from './ReplayChart';
 import ReplayMap from './ReplayMap';
+import TracePipeline from './TracePipeline';
 import { CLASS_META, replaySessions, SUPPRESSION_LABELS } from '../data';
+import { findIssueForReplayDecision } from '../traceability';
+import type { IssueTrace, ReplaySeekRequest } from '../types';
 
 const SPEEDS = [1, 4, 10];
 const WINDOW_SECONDS = 5;
 const FEED_LIMIT = 8;
 
-export default function JourneyReplay() {
-  const [sessionId, setSessionId] = useState(replaySessions[0]?.session_id ?? '');
+interface JourneyReplayProps {
+  sessionId: string;
+  onSessionChange: (sessionId: string) => void;
+  seekRequest: ReplaySeekRequest | null;
+  onSeekConsumed: () => void;
+  onViewIssue: (issueId: string, trace: IssueTrace) => void;
+  demoActive: boolean;
+  onDismissDemo: () => void;
+}
+
+export default function JourneyReplay({
+  sessionId,
+  onSessionChange,
+  seekRequest,
+  onSeekConsumed,
+  onViewIssue,
+  demoActive,
+  onDismissDemo,
+}: JourneyReplayProps) {
   const session = useMemo(
     () =>
       replaySessions.find((item) => item.session_id === sessionId) ??
@@ -35,6 +55,18 @@ export default function JourneyReplay() {
     setPlaying(false);
     setCompleted(false);
   }, [sessionId]);
+
+  // Apply an explicit seek request (e.g. "Replay at event" or Demo Flow) once.
+  // This seeks the recorded clock; it does not run live processing. The request
+  // is consumed immediately so it cannot re-apply on a later normal remount.
+  useEffect(() => {
+    if (!seekRequest || seekRequest.sessionId !== sessionId) return;
+    setPlaying(false);
+    setCompleted(false);
+    setCurrentTime(Math.min(seekRequest.time, duration));
+    if (seekRequest.speed !== undefined) setSpeed(seekRequest.speed);
+    onSeekConsumed();
+  }, [seekRequest, sessionId, duration, onSeekConsumed]);
 
   // Replay clock: advance recorded time by real elapsed time * speed.
   useEffect(() => {
@@ -72,6 +104,21 @@ export default function JourneyReplay() {
   }, [decisions, currentTime]);
 
   const latest = revealedCount > 0 ? decisions[revealedCount - 1] : null;
+
+  const latestIssue = useMemo(
+    () => (latest ? findIssueForReplayDecision(sessionId, latest) : null),
+    [latest, sessionId],
+  );
+
+  const handleViewLatestIssue = useCallback(() => {
+    if (!latest || !latestIssue) return;
+    onViewIssue(latestIssue.issue_id, {
+      issueId: latestIssue.issue_id,
+      source: 'replay',
+      sessionId,
+      eventTime: latest.t,
+    });
+  }, [latest, latestIssue, onViewIssue, sessionId]);
 
   const acceptedSoFar = useMemo(
     () =>
@@ -216,6 +263,29 @@ export default function JourneyReplay() {
 
   return (
     <main className="app-main replay">
+      {demoActive ? (
+        <div className="panel demo-strip">
+          <div className="demo-strip-head">
+            <span className="demo-badge">DEMO FLOW</span>
+            <span className="demo-title">
+              Follow one real recorded observation end to end
+            </span>
+            <button className="demo-dismiss" onClick={onDismissDemo}>
+              Dismiss
+            </button>
+          </div>
+          <ol className="demo-steps">
+            <li>Watch detector decisions</li>
+            <li>Open an accepted observation</li>
+            <li>Trace it to its spatial issue</li>
+          </ol>
+          <TracePipeline
+            stage={latest && latest.decision === 'accepted' ? 'observation' : 'decision'}
+            compact
+          />
+        </div>
+      ) : null}
+
       <div className="panel replay-header">
         <div>
           <h2 className="panel-title">Recorded RoadSens Journey Replay</h2>
@@ -229,7 +299,7 @@ export default function JourneyReplay() {
           <span>Session</span>
           <select
             value={sessionId}
-            onChange={(changeEvent) => setSessionId(changeEvent.target.value)}
+            onChange={(changeEvent) => onSessionChange(changeEvent.target.value)}
           >
             {replaySessions.map((item) => {
               const accepted = item.decisions.filter(
@@ -306,7 +376,12 @@ export default function JourneyReplay() {
         </div>
 
         <div className="replay-side">
-          <DecisionCard decision={latest} candidateStage={candidateStage} />
+          <DecisionCard
+            decision={latest}
+            candidateStage={candidateStage}
+            linkedIssue={latestIssue}
+            onViewIssue={latestIssue ? handleViewLatestIssue : null}
+          />
 
           <div className="panel replay-counters">
             <div className="counter">

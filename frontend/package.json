@@ -6,10 +6,11 @@
   "description": "RoadPulse prototype dashboard: GPS event view over public RoadSens-4M detector outputs.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && npm run validate:issues && vite build",
+    "build": "tsc --noEmit && npm run validate:issues && npm run validate:traceability && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "validate:issues": "node scripts/validate-road-issues.mjs"
+    "validate:issues": "node scripts/validate-road-issues.mjs",
+    "validate:traceability": "node scripts/validate-traceability.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

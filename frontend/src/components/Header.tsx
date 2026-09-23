@@ -4,6 +4,7 @@ import type { View } from '../types';
 interface HeaderProps {
   view: View;
   onViewChange: (view: View) => void;
+  onStartDemo: () => void;
 }
 
 const TABS: Array<{ key: View; label: string }> = [
@@ -12,7 +13,7 @@ const TABS: Array<{ key: View; label: string }> = [
   { key: 'issues', label: 'Road Issues' },
 ];
 
-export default function Header({ view, onViewChange }: HeaderProps) {
+export default function Header({ view, onViewChange, onStartDemo }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="brand">
@@ -38,6 +39,9 @@ export default function Header({ view, onViewChange }: HeaderProps) {
           ))}
         </nav>
         <div className="header-badges">
+          <button className="demo-btn" onClick={onStartDemo}>
+            Demo Flow
+          </button>
           <span className="badge badge-accent">Prototype</span>
           <span className="badge">Public {summary.dataset} data</span>
           <span className="badge badge-muted">Subset: {summary.subset}</span>

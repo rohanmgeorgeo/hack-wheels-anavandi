@@ -4,11 +4,13 @@ import {
   formatNumber,
   SUPPRESSION_LABELS,
 } from '../data';
-import type { ReplayDecision } from '../types';
+import type { ReplayDecision, RoadIssue } from '../types';
 
 interface DecisionCardProps {
   decision: ReplayDecision | null;
   candidateStage: boolean;
+  linkedIssue?: RoadIssue | null;
+  onViewIssue?: (() => void) | null;
 }
 
 const REASON_DESCRIPTIONS: Record<string, string> = {
@@ -21,6 +23,8 @@ const REASON_DESCRIPTIONS: Record<string, string> = {
 export default function DecisionCard({
   decision,
   candidateStage,
+  linkedIssue = null,
+  onViewIssue = null,
 }: DecisionCardProps) {
   if (!decision) {
     return (
@@ -95,6 +99,11 @@ export default function DecisionCard({
               ? 'Provenance: derived heuristic (persistent vibration)'
               : 'Provenance: detected impact (threshold + classifier)'}
           </span>
+          {linkedIssue && onViewIssue ? (
+            <button className="trace-btn" onClick={onViewIssue}>
+              View spatial issue
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -110,6 +119,9 @@ export default function DecisionCard({
             {decision.suppression_reason
               ? REASON_DESCRIPTIONS[decision.suppression_reason]
               : ''}
+          </span>
+          <span className="decision-provenance">
+            Suppressed candidates do not become road observations.
           </span>
         </div>
       ) : null}

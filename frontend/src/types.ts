@@ -99,6 +99,24 @@ export interface SummaryValidation {
 
 export type View = 'operations' | 'replay' | 'issues';
 
+export type PipelineStage = 'sensor' | 'decision' | 'observation' | 'issue';
+
+/** Context describing how a Road Issue was opened (exact observation only). */
+export interface IssueTrace {
+  issueId: string;
+  source: 'operations' | 'replay';
+  sessionId: string;
+  eventTime: number | null;
+}
+
+/** A request to open Journey Replay at a recorded time (not live processing). */
+export interface ReplaySeekRequest {
+  sessionId: string;
+  time: number;
+  speed?: number;
+  nonce: number;
+}
+
 export interface ReplaySample {
   t: number;
   vertical_acceleration: number;

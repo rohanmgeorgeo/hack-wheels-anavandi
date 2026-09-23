@@ -6,10 +6,13 @@ import {
   formatSeconds,
   formatTimeRange,
 } from '../data';
-import type { EventRecord } from '../types';
+import { pluralize } from '../roadIssues';
+import type { EventRecord, RoadIssue } from '../types';
 
 interface EventDetailsProps {
   event: EventRecord | null;
+  linkedIssue?: RoadIssue | null;
+  onViewIssue?: (() => void) | null;
 }
 
 const PROVENANCE_LABELS: Record<string, string> = {
@@ -32,7 +35,11 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-export default function EventDetails({ event }: EventDetailsProps) {
+export default function EventDetails({
+  event,
+  linkedIssue = null,
+  onViewIssue = null,
+}: EventDetailsProps) {
   if (!event) {
     return (
       <div className="panel details-panel">
@@ -101,6 +108,34 @@ export default function EventDetails({ event }: EventDetailsProps) {
           </dd>
         </div>
       </dl>
+
+      {linkedIssue && onViewIssue ? (
+        <div className="detail-section trace-action">
+          <p className="detail-section-title">Traceability</p>
+          <p className="detail-footnote">
+            Part of {linkedIssue.issue_id}: {linkedIssue.observation_count}{' '}
+            {pluralize(
+              linkedIssue.observation_count,
+              'observation',
+              'observations',
+            )}{' '}
+            in {linkedIssue.distinct_session_count}{' '}
+            {pluralize(
+              linkedIssue.distinct_session_count,
+              'recorded session',
+              'recorded sessions',
+            )}
+            .
+          </p>
+          <button className="trace-btn" onClick={onViewIssue}>
+            View spatial issue
+          </button>
+        </div>
+      ) : !event.gps ? (
+        <p className="detail-footnote">
+          No spatial issue: this event has no source GPS.
+        </p>
+      ) : null}
 
       <div className="detail-section">
         <p className="detail-section-title">Detector evidence / features</p>

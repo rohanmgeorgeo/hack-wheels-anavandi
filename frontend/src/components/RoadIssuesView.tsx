@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import RoadIssuesMap from './RoadIssuesMap';
+import TracePipeline from './TracePipeline';
 import {
   CLASS_META,
   formatCoords,
@@ -17,8 +18,9 @@ import {
   pluralize,
   sortIssues,
 } from '../roadIssues';
+import { findEventForObservationId, hasReplaySession } from '../traceability';
 import type { IssueFilter } from '../roadIssues';
-import type { RoadIssue } from '../types';
+import type { IssueTrace, RoadIssue } from '../types';
 
 const PROVENANCE_LABELS: Record<string, string> = {
   detected_impact: 'Detected impact',
@@ -30,6 +32,14 @@ const FILTERS: Array<{ key: IssueFilter; label: string }> = [
   { key: 'multi', label: 'Multi-observation' },
   { key: 'single', label: 'Single observation' },
 ];
+
+interface RoadIssuesViewProps {
+  selectedIssueId: string | null;
+  onSelectIssue: (issueId: string) => void;
+  onInspectEvent: (observationId: string) => void;
+  onReplayEvent: (sessionId: string, time: number) => void;
+  trace: IssueTrace | null;
+}
 
 function ClassChip({ issue }: { issue: RoadIssue }) {
   const dominant = dominantClass(issue);
@@ -49,23 +59,27 @@ function ClassChip({ issue }: { issue: RoadIssue }) {
   );
 }
 
-export default function RoadIssuesView() {
+export default function RoadIssuesView({
+  selectedIssueId,
+  onSelectIssue,
+  onInspectEvent,
+  onReplayEvent,
+  trace,
+}: RoadIssuesViewProps) {
   const sorted = useMemo(() => sortIssues(roadIssues), []);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    sorted[0]?.issue_id ?? null,
-  );
   const [filter, setFilter] = useState<IssueFilter>('all');
 
   const selected =
-    sorted.find((issue) => issue.issue_id === selectedId) ?? sorted[0] ?? null;
+    sorted.find((issue) => issue.issue_id === selectedIssueId) ?? sorted[0] ?? null;
   const visible = useMemo(() => filterIssues(sorted, filter), [sorted, filter]);
 
   const radius = roadIssuesFile.association_method.radius_meters;
   const summary = roadIssuesSummary;
 
-  const handleSelect = useCallback((issue: RoadIssue) => {
-    setSelectedId(issue.issue_id);
-  }, []);
+  const handleSelect = useCallback(
+    (issue: RoadIssue) => onSelectIssue(issue.issue_id),
+    [onSelectIssue],
+  );
 
   const metrics = [
     {
@@ -93,6 +107,9 @@ export default function RoadIssuesView() {
       accent: '#64748b',
     },
   ];
+
+  const tracedSelected =
+    trace && selected && trace.issueId === selected.issue_id ? trace : null;
 
   return (
     <main className="app-main issues-view">
@@ -177,7 +194,7 @@ export default function RoadIssuesView() {
                 >
                   <button
                     className="issue-item-button"
-                    onClick={() => setSelectedId(issue.issue_id)}
+                    onClick={() => onSelectIssue(issue.issue_id)}
                   >
                     <div className="issue-item-head">
                       <span className="issue-id">{issue.issue_id}</span>
@@ -212,6 +229,30 @@ export default function RoadIssuesView() {
           </section>
         </aside>
       </div>
+
+      {tracedSelected ? (
+        <div className="panel trace-banner">
+          <div>
+            <p className="trace-banner-title">
+              Traced from Session {tracedSelected.sessionId} observation
+              {tracedSelected.eventTime !== null
+                ? ` at ${tracedSelected.eventTime.toFixed(2)} s`
+                : ''}
+            </p>
+            <p className="trace-banner-sub">
+              This spatial issue contains {selected?.observation_count ?? 0}{' '}
+              accepted{' '}
+              {pluralize(
+                selected?.observation_count ?? 0,
+                'observation',
+                'observations',
+              )}
+              .
+            </p>
+          </div>
+          <TracePipeline stage="issue" compact />
+        </div>
+      ) : null}
 
       {selected ? (
         <div className="issues-detail-grid">
@@ -295,25 +336,62 @@ export default function RoadIssuesView() {
                       <th>Confidence</th>
                       <th>GPS</th>
                       <th>Provenance</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selected.observations.map((observation) => (
-                      <tr key={observation.observation_id}>
-                        <td>{observation.session_id}</td>
-                        <td>{observation.event_class}</td>
-                        <td>{formatSeconds(observation.event_time)}</td>
-                        <td>{formatNumber(observation.severity_score, 1)}</td>
-                        <td>{formatNumber(observation.confidence_score, 1)}</td>
-                        <td className="member-coords">
-                          {formatCoords(observation)}
-                        </td>
-                        <td>
-                          {PROVENANCE_LABELS[observation.provenance] ??
-                            observation.provenance}
-                        </td>
-                      </tr>
-                    ))}
+                    {selected.observations.map((observation) => {
+                      const canInspect = findEventForObservationId(
+                        observation.observation_id,
+                      );
+                      const canReplay =
+                        observation.event_time !== null &&
+                        hasReplaySession(observation.session_id);
+                      return (
+                        <tr key={observation.observation_id}>
+                          <td>{observation.session_id}</td>
+                          <td>{observation.event_class}</td>
+                          <td>{formatSeconds(observation.event_time)}</td>
+                          <td>{formatNumber(observation.severity_score, 1)}</td>
+                          <td>{formatNumber(observation.confidence_score, 1)}</td>
+                          <td className="member-coords">
+                            {formatCoords(observation)}
+                          </td>
+                          <td>
+                            {PROVENANCE_LABELS[observation.provenance] ??
+                              observation.provenance}
+                          </td>
+                          <td className="member-actions">
+                            {canInspect ? (
+                              <button
+                                className="trace-btn small"
+                                onClick={() =>
+                                  onInspectEvent(observation.observation_id)
+                                }
+                              >
+                                Inspect source event
+                              </button>
+                            ) : null}
+                            {canReplay ? (
+                              <button
+                                className="trace-btn small"
+                                onClick={() =>
+                                  onReplayEvent(
+                                    observation.session_id,
+                                    Math.max(
+                                      0,
+                                      (observation.event_time ?? 0) - 1.5,
+                                    ),
+                                  )
+                                }
+                              >
+                                Replay at event
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -352,6 +430,7 @@ export default function RoadIssuesView() {
                   <span>{selected.distinct_session_count}</span>
                 </li>
               </ul>
+              <TracePipeline stage="issue" compact />
               <p className="panel-note">
                 Every member belongs to the generated RoadPulse detector output.
                 Issue centers are derived from the member coordinates.
