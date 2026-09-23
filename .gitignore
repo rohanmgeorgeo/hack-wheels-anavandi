@@ -7,6 +7,9 @@ node_modules/
 dist/
 .next/
 
+# Generated local prototype store (rebuildable via scripts/build_observation_store.py)
+data/demo/processed/roadpulse.db
+
 # Environment / secrets
 .env
 .env.*

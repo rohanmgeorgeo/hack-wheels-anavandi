@@ -39,15 +39,20 @@ Python preparation pipeline        scripts/prepare_demo_data.py
 Explainable detector               processor/detector.py
         │  events.json + detector_summary.json + replay_sessions.json
         ▼
+Local observation store &          scripts/build_observation_store.py
+spatial issue association          (SQLite + road_issues.json)
+        │
+        ▼
 React + TypeScript frontend        frontend/
         │  imports the JSON at build time
         ▼
 Leaflet / OpenStreetMap map        "GPS Event View" + "Journey Replay"
 ```
 
-* **No backend, no database, no authentication.**
-* The frontend reads the detector's generated JSON directly (build-time import),
-  so the whole analytical UI works offline.
+* **No backend, no database server, no authentication.** SQLite is used as a
+  local file-based prototype store only.
+* The frontend reads the generated JSON directly (build-time import), so the
+  whole analytical UI works offline.
 * Only the OpenStreetMap basemap tiles need connectivity.
 
 Repository layout:
@@ -55,9 +60,9 @@ Repository layout:
 | Path | Purpose |
 | --- | --- |
 | `processor/` | Loader, feature derivation and the explainable detector. |
-| `scripts/` | `prepare_demo_data.py` (normalise data), `run_detector.py` (write detector outputs) and `export_replay_data.py` (write the Journey Replay dataset). |
+| `scripts/` | `prepare_demo_data.py`, `run_detector.py`, `export_replay_data.py` and `build_observation_store.py`. |
 | `data/demo/` | Tracked demo subset, source CSVs and generated `processed/` outputs. |
-| `tests/` | 38 Python unit/integration tests. |
+| `tests/` | Python unit/integration tests. |
 | `frontend/` | Vite + React + TypeScript + Leaflet dashboard. |
 
 ---
@@ -207,6 +212,44 @@ In the current demo subset: **44 accepted events, 98 suppressed candidates**
 
 ---
 
+## Local observation store & spatial issue association
+
+RoadPulse now has a deterministic, offline step that turns accepted detector
+observations into road-issue evidence:
+
+```bash
+python3 scripts/build_observation_store.py
+```
+
+It reads the existing `events.json` / `summary.json` (it does **not** re-run or
+change the detector) and writes:
+
+* `data/demo/processed/roadpulse.db` — a local **SQLite** prototype store
+  (Python standard library `sqlite3`) with `journeys`, `observations`,
+  `suppressed_candidates`, `road_issues` and `issue_observations` tables.
+* `data/demo/processed/road_issues.json` — a compact aggregation for the next
+  dashboard feature.
+
+**Spatial issue clustering** (prototype proximity association, **not**
+road-network map matching): accepted observations that have **real GPS** are
+grouped when they fall within a single configurable radius
+(`ASSOCIATION_RADIUS_METERS = 10.0`, justified by the observed within-session
+nearest-neighbour distances of ~2 m and the 208 m minimum cross-session
+separation). Each cluster reports a factual `observation_count` and
+`distinct_session_count`, plus class counts and severity/confidence summaries
+computed from its real members.
+
+Truthfulness rules:
+
+* observations without GPS are stored but **never** enter clustering;
+* `distinct_session_count` stays `1` when every member comes from one recorded
+  session — that is **not** called cross-session corroboration;
+* on the current demo data there are **zero** cross-session clusters, and the
+  payload says so explicitly rather than inventing corroboration;
+* SQLite here is **local prototype persistence**, not a production database.
+
+---
+
 ## Offline behaviour
 
 * The dashboard UI **and** all analytical results render from the local
@@ -229,12 +272,15 @@ Python pipeline; no analytical values in the UI are invented.
 
 ## Current prototype status
 
-Round 1 vertical slice — **working core, not a finished product**:
+Round 2 technical step — **working core, not a finished product**:
 
-* ✅ Explainable Python detector with 46 passing tests.
+* ✅ Explainable Python detector with 67 passing tests.
 * ✅ Dashboard with real metrics, GPS event map, event details, suppression and
   transparency panels.
 * ✅ Recorded RoadSens Journey Replay (real samples + real detector decisions).
+* ✅ Local SQLite observation store and prototype proximity-based spatial issue
+  association (`road_issues.json`).
 * ✅ Offline-capable analytical UI.
+* ⬜ Road-issue screen in the dashboard (next task).
 * ⬜ Road-segment map matching.
 * ⬜ Live phone sensing and a real fleet backend.

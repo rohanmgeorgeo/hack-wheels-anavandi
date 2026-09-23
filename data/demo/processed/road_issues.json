@@ -1,0 +1,778 @@
+{
+  "dataset": "RoadSens-4M",
+  "association_method": {
+    "type": "proximity_anchor_cluster",
+    "distance_metric": "haversine",
+    "radius_meters": 10.0,
+    "clusters_accepted_gps_only": true,
+    "note": "Prototype proximity-based issue association. Nearby accepted observations with real GPS may share a spatial issue cluster. This is not road-network map matching and does not prove that different buses observed the same issue."
+  },
+  "summary": {
+    "accepted_observations_total": 44,
+    "accepted_gps_observations": 31,
+    "accepted_without_gps": 13,
+    "suppressed_candidates_total": 98,
+    "issue_count": 11,
+    "multi_observation_issue_count": 9,
+    "multi_session_issue_count": 0,
+    "cluster_size_distribution": {
+      "4": 1,
+      "1": 2,
+      "2": 3,
+      "3": 3,
+      "5": 2
+    },
+    "session_combinations": {},
+    "min_cross_session_distance_meters": 208.2,
+    "cross_session_note": "No cross-session spatial clusters exist at 10.0 m. Closest observations from different recorded sessions are 208.20 m apart, far beyond the radius. All clusters therefore come from a single recorded session; cross-session corroboration is not claimed."
+  },
+  "issues": [
+    {
+      "issue_id": "issue-0001",
+      "center": {
+        "latitude": 24.373289,
+        "longitude": 88.531328
+      },
+      "anchor": {
+        "latitude": 24.373295,
+        "longitude": 88.531375
+      },
+      "observation_count": 4,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "2"
+      ],
+      "class_counts": {
+        "Bump": 3,
+        "Sustained Roughness": 1
+      },
+      "severity": {
+        "mean": 13.9575,
+        "max": 21.25
+      },
+      "confidence": {
+        "mean": 55.98,
+        "max": 59.11
+      },
+      "first_observation_time": 0.68,
+      "last_observation_time": 2.82,
+      "observations": [
+        {
+          "observation_id": "obs:2:Bump:52:60",
+          "session_id": "2",
+          "event_class": "Bump",
+          "event_time": 0.68,
+          "provenance": "detected_impact",
+          "severity_score": 9.14,
+          "confidence_score": 54.73,
+          "latitude": 24.3732946,
+          "longitude": 88.5313747,
+          "start_row": 52,
+          "peak_row": 60
+        },
+        {
+          "observation_id": "obs:2:Bump:83:89",
+          "session_id": "2",
+          "event_class": "Bump",
+          "event_time": 0.97,
+          "provenance": "detected_impact",
+          "severity_score": 11.84,
+          "confidence_score": 59.11,
+          "latitude": 24.3732946,
+          "longitude": 88.5313747,
+          "start_row": 83,
+          "peak_row": 89
+        },
+        {
+          "observation_id": "obs:2:Sustained Roughness:265:x",
+          "session_id": "2",
+          "event_class": "Sustained Roughness",
+          "event_time": 2.73,
+          "provenance": "derived_heuristic",
+          "severity_score": 21.25,
+          "confidence_score": 54.99,
+          "latitude": 24.373284236,
+          "longitude": 88.531282276,
+          "start_row": 265,
+          "peak_row": null
+        },
+        {
+          "observation_id": "obs:2:Bump:267:274",
+          "session_id": "2",
+          "event_class": "Bump",
+          "event_time": 2.82,
+          "provenance": "detected_impact",
+          "severity_score": 13.6,
+          "confidence_score": 55.09,
+          "latitude": 24.373283957,
+          "longitude": 88.531280062,
+          "start_row": 267,
+          "peak_row": 274
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0002",
+      "center": {
+        "latitude": 24.375713,
+        "longitude": 88.622924
+      },
+      "anchor": {
+        "latitude": 24.375713,
+        "longitude": 88.622924
+      },
+      "observation_count": 1,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "35"
+      ],
+      "class_counts": {
+        "Bump": 1
+      },
+      "severity": {
+        "mean": 3.83,
+        "max": 3.83
+      },
+      "confidence": {
+        "mean": 60.56,
+        "max": 60.56
+      },
+      "first_observation_time": 3.18,
+      "last_observation_time": 3.18,
+      "observations": [
+        {
+          "observation_id": "obs:35:Bump:309:310",
+          "session_id": "35",
+          "event_class": "Bump",
+          "event_time": 3.18,
+          "provenance": "detected_impact",
+          "severity_score": 3.83,
+          "confidence_score": 60.56,
+          "latitude": 24.375713242,
+          "longitude": 88.622923807,
+          "start_row": 309,
+          "peak_row": 310
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0003",
+      "center": {
+        "latitude": 24.373628,
+        "longitude": 88.534519
+      },
+      "anchor": {
+        "latitude": 24.373624,
+        "longitude": 88.534552
+      },
+      "observation_count": 2,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 2
+      },
+      "severity": {
+        "mean": 38.245,
+        "max": 66.42
+      },
+      "confidence": {
+        "mean": 69.225,
+        "max": 75.18
+      },
+      "first_observation_time": 0.65,
+      "last_observation_time": 2.07,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:43:57",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 0.65,
+          "provenance": "detected_impact",
+          "severity_score": 10.07,
+          "confidence_score": 63.27,
+          "latitude": 24.373624,
+          "longitude": 88.5345515,
+          "start_row": 43,
+          "peak_row": 57
+        },
+        {
+          "observation_id": "obs:4:Bump:161:199",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 2.07,
+          "provenance": "detected_impact",
+          "severity_score": 66.42,
+          "confidence_score": 75.18,
+          "latitude": 24.373631313,
+          "longitude": 88.534485902,
+          "start_row": 161,
+          "peak_row": 199
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0004",
+      "center": {
+        "latitude": 24.373625,
+        "longitude": 88.534269
+      },
+      "anchor": {
+        "latitude": 24.373628,
+        "longitude": 88.534317
+      },
+      "observation_count": 2,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 2
+      },
+      "severity": {
+        "mean": 12.37,
+        "max": 15.43
+      },
+      "confidence": {
+        "mean": 55.45,
+        "max": 55.66
+      },
+      "first_observation_time": 4.54,
+      "last_observation_time": 5.86,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:432:446",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 4.54,
+          "provenance": "detected_impact",
+          "severity_score": 15.43,
+          "confidence_score": 55.66,
+          "latitude": 24.373627916,
+          "longitude": 88.53431732,
+          "start_row": 432,
+          "peak_row": 446
+        },
+        {
+          "observation_id": "obs:4:Bump:566:578",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 5.86,
+          "provenance": "detected_impact",
+          "severity_score": 9.31,
+          "confidence_score": 55.24,
+          "latitude": 24.37362122,
+          "longitude": 88.53422024,
+          "start_row": 566,
+          "peak_row": 578
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0005",
+      "center": {
+        "latitude": 24.373619,
+        "longitude": 88.534188
+      },
+      "anchor": {
+        "latitude": 24.37362,
+        "longitude": 88.534204
+      },
+      "observation_count": 3,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 3
+      },
+      "severity": {
+        "mean": 14.4967,
+        "max": 30.23
+      },
+      "confidence": {
+        "mean": 57.9633,
+        "max": 64.2
+      },
+      "first_observation_time": 6.08,
+      "last_observation_time": 6.44,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:592:600",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 6.08,
+          "provenance": "detected_impact",
+          "severity_score": 30.23,
+          "confidence_score": 64.2,
+          "latitude": 24.373620188,
+          "longitude": 88.53420365400001,
+          "start_row": 592,
+          "peak_row": 600
+        },
+        {
+          "observation_id": "obs:4:Bump:612:624",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 6.32,
+          "provenance": "detected_impact",
+          "severity_score": 11.21,
+          "confidence_score": 53.26,
+          "latitude": 24.373618844,
+          "longitude": 88.53418510200001,
+          "start_row": 612,
+          "peak_row": 624
+        },
+        {
+          "observation_id": "obs:4:Bump:635:636",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 6.44,
+          "provenance": "detected_impact",
+          "severity_score": 2.05,
+          "confidence_score": 56.43,
+          "latitude": 24.373618172,
+          "longitude": 88.534175826,
+          "start_row": 635,
+          "peak_row": 636
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0006",
+      "center": {
+        "latitude": 24.373604,
+        "longitude": 88.534062
+      },
+      "anchor": {
+        "latitude": 24.373608,
+        "longitude": 88.534086
+      },
+      "observation_count": 2,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 2
+      },
+      "severity": {
+        "mean": 20.965,
+        "max": 30.01
+      },
+      "confidence": {
+        "mean": 59.535,
+        "max": 65.09
+      },
+      "first_observation_time": 7.6,
+      "last_observation_time": 8.2,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:733:752",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 7.6,
+          "provenance": "detected_impact",
+          "severity_score": 30.01,
+          "confidence_score": 65.09,
+          "latitude": 24.37360768,
+          "longitude": 88.53408578,
+          "start_row": 733,
+          "peak_row": 752
+        },
+        {
+          "observation_id": "obs:4:Bump:801:812",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 8.2,
+          "provenance": "detected_impact",
+          "severity_score": 11.92,
+          "confidence_score": 53.98,
+          "latitude": 24.37360002,
+          "longitude": 88.534038378,
+          "start_row": 801,
+          "peak_row": 812
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0007",
+      "center": {
+        "latitude": 24.373585,
+        "longitude": 88.533927
+      },
+      "anchor": {
+        "latitude": 24.37359,
+        "longitude": 88.53397
+      },
+      "observation_count": 3,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 3
+      },
+      "severity": {
+        "mean": 55.7133,
+        "max": 73.25
+      },
+      "confidence": {
+        "mean": 73.3767,
+        "max": 76.55
+      },
+      "first_observation_time": 9.03,
+      "last_observation_time": 10.0,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:873:895",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 9.03,
+          "provenance": "detected_impact",
+          "severity_score": 43.15,
+          "confidence_score": 67.93,
+          "latitude": 24.37359006,
+          "longitude": 88.53397006899999,
+          "start_row": 873,
+          "peak_row": 895
+        },
+        {
+          "observation_id": "obs:4:Bump:927:958",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 9.66,
+          "provenance": "detected_impact",
+          "severity_score": 73.25,
+          "confidence_score": 76.55,
+          "latitude": 24.37358442,
+          "longitude": 88.5339193,
+          "start_row": 927,
+          "peak_row": 958
+        },
+        {
+          "observation_id": "obs:4:Bump:973:992",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 10.0,
+          "provenance": "detected_impact",
+          "severity_score": 50.74,
+          "confidence_score": 75.65,
+          "latitude": 24.373581428,
+          "longitude": 88.53389193,
+          "start_row": 973,
+          "peak_row": 992
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0008",
+      "center": {
+        "latitude": 24.373576,
+        "longitude": 88.533794
+      },
+      "anchor": {
+        "latitude": 24.37358,
+        "longitude": 88.533843
+      },
+      "observation_count": 5,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 4,
+        "Sustained Roughness": 1
+      },
+      "severity": {
+        "mean": 37.712,
+        "max": 77.2
+      },
+      "confidence": {
+        "mean": 67.372,
+        "max": 82.55
+      },
+      "first_observation_time": 10.83,
+      "last_observation_time": 13.0,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:1074:1075",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 10.83,
+          "provenance": "detected_impact",
+          "severity_score": 37.53,
+          "confidence_score": 71.68,
+          "latitude": 24.373579514,
+          "longitude": 88.533842748,
+          "start_row": 1074,
+          "peak_row": 1075
+        },
+        {
+          "observation_id": "obs:4:Bump:1109:1117",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 11.25,
+          "provenance": "detected_impact",
+          "severity_score": 7.7,
+          "confidence_score": 54.25,
+          "latitude": 24.37357853,
+          "longitude": 88.53382114,
+          "start_row": 1109,
+          "peak_row": 1117
+        },
+        {
+          "observation_id": "obs:4:Bump:1215:1222",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 12.3,
+          "provenance": "detected_impact",
+          "severity_score": 22.39,
+          "confidence_score": 65.45,
+          "latitude": 24.37357524025974,
+          "longitude": 88.53377845454544,
+          "start_row": 1215,
+          "peak_row": 1222
+        },
+        {
+          "observation_id": "obs:4:Sustained Roughness:1239:x",
+          "session_id": "4",
+          "event_class": "Sustained Roughness",
+          "event_time": 12.47,
+          "provenance": "derived_heuristic",
+          "severity_score": 43.74,
+          "confidence_score": 62.93,
+          "latitude": 24.373574224675323,
+          "longitude": 88.53377258181817,
+          "start_row": 1239,
+          "peak_row": null
+        },
+        {
+          "observation_id": "obs:4:Bump:1287:1292",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 13.0,
+          "provenance": "detected_impact",
+          "severity_score": 77.2,
+          "confidence_score": 82.55,
+          "latitude": 24.37357105844156,
+          "longitude": 88.53375427272726,
+          "start_row": 1287,
+          "peak_row": 1292
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0009",
+      "center": {
+        "latitude": 24.373567,
+        "longitude": 88.533728
+      },
+      "anchor": {
+        "latitude": 24.373567,
+        "longitude": 88.533728
+      },
+      "observation_count": 1,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 1
+      },
+      "severity": {
+        "mean": 16.61,
+        "max": 16.61
+      },
+      "confidence": {
+        "mean": 66.17,
+        "max": 66.17
+      },
+      "first_observation_time": 13.91,
+      "last_observation_time": 13.91,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:1382:1383",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 13.91,
+          "provenance": "detected_impact",
+          "severity_score": 16.61,
+          "confidence_score": 66.17,
+          "latitude": 24.37356713,
+          "longitude": 88.533728315,
+          "start_row": 1382,
+          "peak_row": 1383
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0010",
+      "center": {
+        "latitude": 24.373548,
+        "longitude": 88.533596
+      },
+      "anchor": {
+        "latitude": 24.373551,
+        "longitude": 88.533614
+      },
+      "observation_count": 5,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 4,
+        "Sustained Roughness": 1
+      },
+      "severity": {
+        "mean": 14.376,
+        "max": 28.98
+      },
+      "confidence": {
+        "mean": 57.84,
+        "max": 64.02
+      },
+      "first_observation_time": 17.08,
+      "last_observation_time": 18.34,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:1690:1700",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 17.08,
+          "provenance": "detected_impact",
+          "severity_score": 14.83,
+          "confidence_score": 61.35,
+          "latitude": 24.373550582,
+          "longitude": 88.533614094,
+          "start_row": 1690,
+          "peak_row": 1700
+        },
+        {
+          "observation_id": "obs:4:Sustained Roughness:1700:x",
+          "session_id": "4",
+          "event_class": "Sustained Roughness",
+          "event_time": 17.08,
+          "provenance": "derived_heuristic",
+          "severity_score": 6.14,
+          "confidence_score": 48.76,
+          "latitude": 24.373550582,
+          "longitude": 88.533614094,
+          "start_row": 1700,
+          "peak_row": null
+        },
+        {
+          "observation_id": "obs:4:Bump:1716:1721",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 17.29,
+          "provenance": "detected_impact",
+          "severity_score": 6.71,
+          "confidence_score": 56.5,
+          "latitude": 24.373549343,
+          "longitude": 88.53360458099999,
+          "start_row": 1716,
+          "peak_row": 1721
+        },
+        {
+          "observation_id": "obs:4:Bump:1742:1750",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 17.58,
+          "provenance": "detected_impact",
+          "severity_score": 15.22,
+          "confidence_score": 58.57,
+          "latitude": 24.373547632,
+          "longitude": 88.533591444,
+          "start_row": 1742,
+          "peak_row": 1750
+        },
+        {
+          "observation_id": "obs:4:Bump:1816:1826",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 18.34,
+          "provenance": "detected_impact",
+          "severity_score": 28.98,
+          "confidence_score": 64.02,
+          "latitude": 24.373543288,
+          "longitude": 88.533555168,
+          "start_row": 1816,
+          "peak_row": 1826
+        }
+      ]
+    },
+    {
+      "issue_id": "issue-0011",
+      "center": {
+        "latitude": 24.373528,
+        "longitude": 88.533435
+      },
+      "anchor": {
+        "latitude": 24.373531,
+        "longitude": 88.533458
+      },
+      "observation_count": 3,
+      "distinct_session_count": 1,
+      "session_ids": [
+        "4"
+      ],
+      "class_counts": {
+        "Bump": 3
+      },
+      "severity": {
+        "mean": 18.9967,
+        "max": 46.59
+      },
+      "confidence": {
+        "mean": 61.8667,
+        "max": 71.28
+      },
+      "first_observation_time": 20.17,
+      "last_observation_time": 21.01,
+      "observations": [
+        {
+          "observation_id": "obs:4:Bump:1994:2009",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 20.17,
+          "provenance": "detected_impact",
+          "severity_score": 46.59,
+          "confidence_score": 71.28,
+          "latitude": 24.373531441,
+          "longitude": 88.53345827999999,
+          "start_row": 1994,
+          "peak_row": 2009
+        },
+        {
+          "observation_id": "obs:4:Bump:2057:2058",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 20.66,
+          "provenance": "detected_impact",
+          "severity_score": 9.17,
+          "confidence_score": 61.7,
+          "latitude": 24.37352806,
+          "longitude": 88.5334328,
+          "start_row": 2057,
+          "peak_row": 2058
+        },
+        {
+          "observation_id": "obs:4:Bump:2092:2093",
+          "session_id": "4",
+          "event_class": "Bump",
+          "event_time": 21.01,
+          "provenance": "detected_impact",
+          "severity_score": 1.23,
+          "confidence_score": 52.62,
+          "latitude": 24.373525645,
+          "longitude": 88.5334146,
+          "start_row": 2092,
+          "peak_row": 2093
+        }
+      ]
+    }
+  ]
+}
