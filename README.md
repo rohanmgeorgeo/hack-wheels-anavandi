@@ -37,12 +37,12 @@ Python preparation pipeline        scripts/prepare_demo_data.py
         │  (load, derive features)
         ▼
 Explainable detector               processor/detector.py
-        │  events.json + detector_summary.json
+        │  events.json + detector_summary.json + replay_sessions.json
         ▼
 React + TypeScript frontend        frontend/
         │  imports the JSON at build time
         ▼
-Leaflet / OpenStreetMap map        "GPS Event View"
+Leaflet / OpenStreetMap map        "GPS Event View" + "Journey Replay"
 ```
 
 * **No backend, no database, no authentication.**
@@ -55,7 +55,7 @@ Repository layout:
 | Path | Purpose |
 | --- | --- |
 | `processor/` | Loader, feature derivation and the explainable detector. |
-| `scripts/` | `prepare_demo_data.py` (normalise data) and `run_detector.py` (write outputs). |
+| `scripts/` | `prepare_demo_data.py` (normalise data), `run_detector.py` (write detector outputs) and `export_replay_data.py` (write the Journey Replay dataset). |
 | `data/demo/` | Tracked demo subset, source CSVs and generated `processed/` outputs. |
 | `tests/` | 38 Python unit/integration tests. |
 | `frontend/` | Vite + React + TypeScript + Leaflet dashboard. |
@@ -109,6 +109,37 @@ npm run typecheck  # TypeScript, no emit
 npm run build      # production build into frontend/dist
 npm run preview    # serve the production build
 ```
+
+### 3. Journey Replay dataset (optional — already committed)
+
+The **Journey Replay** view plays back a *recorded* RoadSens-4M session; it does
+not run the detector in the browser and is never presented as a live bus. Its
+dataset is produced by reusing the existing pipeline:
+
+```bash
+python3 scripts/export_replay_data.py   # writes replay_sessions.json
+```
+
+---
+
+## Journey Replay
+
+A judge-facing playback of one recorded anomaly session (2, 4 or 35), built from
+real prepared data and the real detector decisions:
+
+* a replay clock advances the recorded timestamp; the sensor traces update with
+  the actual per-sample `vertical_acceleration`, `horizontal_acceleration`,
+  `yaw_rate` and rolling vibration RMS;
+* when the clock reaches a recorded candidate's timestamp, the card shows the
+  **actual** detector decision — `CANDIDATE DETECTED`, then `✓ ACCEPTED` (class,
+  severity, confidence) or `✕ SUPPRESSED` (turning / horizontal_motion / noise);
+* accepted/suppressed counters grow during playback;
+* accepted events with **real** source GPS appear on the map only when their
+  recorded time is reached, along the recorded GPS track;
+* controls: Play/Pause, Restart and 1x / 4x / 10x speed.
+
+The replay does not fabricate sensor values, GPS or decisions, and does not
+simulate a different algorithm. Events without GPS are never plotted.
 
 ---
 
@@ -200,9 +231,10 @@ Python pipeline; no analytical values in the UI are invented.
 
 Round 1 vertical slice — **working core, not a finished product**:
 
-* ✅ Explainable Python detector with 38 passing tests.
+* ✅ Explainable Python detector with 46 passing tests.
 * ✅ Dashboard with real metrics, GPS event map, event details, suppression and
   transparency panels.
+* ✅ Recorded RoadSens Journey Replay (real samples + real detector decisions).
 * ✅ Offline-capable analytical UI.
 * ⬜ Road-segment map matching.
 * ⬜ Live phone sensing and a real fleet backend.

@@ -97,6 +97,61 @@ export interface SummaryValidation {
   separation_note: string;
 }
 
+export type View = 'operations' | 'replay';
+
+export interface ReplaySample {
+  t: number;
+  vertical_acceleration: number;
+  horizontal_acceleration: number;
+  yaw_rate: number;
+  gyroscope_magnitude: number;
+  rolling_rms: number;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export type ReplayDecisionKind = 'accepted' | 'suppressed';
+
+export interface ReplayDecision {
+  t: number;
+  decision: ReplayDecisionKind;
+  event_type: EventClass | null;
+  suppression_reason: SuppressionReason | null;
+  severity: number;
+  confidence: number;
+  latitude: number | null;
+  longitude: number | null;
+  provenance: string;
+  start_time: number | null;
+  end_time: number | null;
+  peak_time: number | null;
+  start_row: number;
+  end_row: number;
+  peak_row: number | null;
+  evidence: EventEvidence;
+  truth_label: string | null;
+}
+
+export interface ReplaySession {
+  session_id: string;
+  schema: string;
+  row_count: number;
+  duration_seconds: number;
+  sampling_hz: number;
+  sample_fields: string[];
+  samples: ReplaySample[];
+  decisions: ReplayDecision[];
+}
+
+export interface ReplayFile {
+  dataset: string;
+  subset: string;
+  detector: string;
+  generated_by: string;
+  note: string;
+  sessions: ReplaySession[];
+}
+
 export interface DetectorSummary {
   dataset: string;
   subset: string;

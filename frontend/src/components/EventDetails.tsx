@@ -1,5 +1,6 @@
 import {
   CLASS_META,
+  EVIDENCE_LABELS,
   formatCoords,
   formatNumber,
   formatSeconds,
@@ -10,20 +11,6 @@ import type { EventRecord } from '../types';
 interface EventDetailsProps {
   event: EventRecord | null;
 }
-
-const EVIDENCE_LABELS: Record<string, string> = {
-  peak_vertical_acceleration: 'Peak vertical acceleration (m/s²)',
-  peak_abs_vertical_acceleration: 'Peak |vertical acceleration| (m/s²)',
-  duration_seconds: 'Duration (s)',
-  local_vibration_rms: 'Local vibration RMS (m/s²)',
-  vertical_impulse: 'Vertical impulse',
-  rebound_ratio: 'Rebound ratio',
-  turning_activity: 'Turning activity (yaw)',
-  horizontal_activity: 'Horizontal activity',
-  gyroscope_magnitude: 'Gyroscope magnitude (rad/s)',
-  mean_vertical_rms: 'Mean vertical RMS (m/s²)',
-  peak_vertical_rms: 'Peak vertical RMS (m/s²)',
-};
 
 const PROVENANCE_LABELS: Record<string, string> = {
   detected_impact: 'Detected impact (threshold + classifier)',

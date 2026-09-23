@@ -1,0 +1,392 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import DecisionCard from './DecisionCard';
+import ReplayChart from './ReplayChart';
+import ReplayMap from './ReplayMap';
+import { CLASS_META, replaySessions, SUPPRESSION_LABELS } from '../data';
+
+const SPEEDS = [1, 4, 10];
+const WINDOW_SECONDS = 5;
+const FEED_LIMIT = 8;
+
+export default function JourneyReplay() {
+  const [sessionId, setSessionId] = useState(replaySessions[0]?.session_id ?? '');
+  const session = useMemo(
+    () =>
+      replaySessions.find((item) => item.session_id === sessionId) ??
+      replaySessions[0],
+    [sessionId],
+  );
+
+  const samples = session?.samples ?? [];
+  const decisions = session?.decisions ?? [];
+  const duration = session?.duration_seconds ?? 0;
+
+  const [currentTime, setCurrentTime] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(4);
+  const [completed, setCompleted] = useState(false);
+  const rafRef = useRef<number | null>(null);
+  const lastTsRef = useRef<number | null>(null);
+
+  // Reset the replay whenever the recorded session changes.
+  useEffect(() => {
+    setCurrentTime(0);
+    setPlaying(false);
+    setCompleted(false);
+  }, [sessionId]);
+
+  // Replay clock: advance recorded time by real elapsed time * speed.
+  useEffect(() => {
+    if (!playing) {
+      lastTsRef.current = null;
+      return;
+    }
+    const tick = (ts: number) => {
+      if (lastTsRef.current === null) lastTsRef.current = ts;
+      const delta = (ts - lastTsRef.current) / 1000;
+      lastTsRef.current = ts;
+      setCurrentTime((prev) => Math.min(duration, prev + delta * speed));
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing, speed, duration]);
+
+  useEffect(() => {
+    if (playing && duration > 0 && currentTime >= duration) {
+      setPlaying(false);
+      setCompleted(true);
+    }
+  }, [playing, currentTime, duration]);
+
+  const revealedCount = useMemo(() => {
+    let count = 0;
+    for (const decision of decisions) {
+      if (decision.t <= currentTime) count += 1;
+      else break;
+    }
+    return count;
+  }, [decisions, currentTime]);
+
+  const latest = revealedCount > 0 ? decisions[revealedCount - 1] : null;
+
+  const acceptedSoFar = useMemo(
+    () =>
+      decisions
+        .slice(0, revealedCount)
+        .filter((decision) => decision.decision === 'accepted').length,
+    [decisions, revealedCount],
+  );
+  const suppressedSoFar = revealedCount - acceptedSoFar;
+  const totalAccepted = useMemo(
+    () => decisions.filter((decision) => decision.decision === 'accepted').length,
+    [decisions],
+  );
+  const totalSuppressed = decisions.length - totalAccepted;
+
+  // Briefly show the real candidate before revealing its real resolution.
+  const [candidateStage, setCandidateStage] = useState(false);
+  useEffect(() => {
+    if (!latest) {
+      setCandidateStage(false);
+      return;
+    }
+    setCandidateStage(true);
+    const timer = window.setTimeout(() => setCandidateStage(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [latest]);
+
+  const sampleIndex = useMemo(() => {
+    let lo = 0;
+    let hi = samples.length - 1;
+    let answer = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (samples[mid].t <= currentTime) {
+        answer = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return answer;
+  }, [samples, currentTime]);
+
+  const currentSample = sampleIndex >= 0 ? samples[sampleIndex] : null;
+
+  const sessionBounds = useMemo<
+    [[number, number], [number, number]] | null
+  >(() => {
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    for (const sample of samples) {
+      if (sample.latitude === null || sample.longitude === null) continue;
+      if (sample.latitude < minLat) minLat = sample.latitude;
+      if (sample.latitude > maxLat) maxLat = sample.latitude;
+      if (sample.longitude < minLng) minLng = sample.longitude;
+      if (sample.longitude > maxLng) maxLng = sample.longitude;
+    }
+    if (!Number.isFinite(minLat) || !Number.isFinite(minLng)) return null;
+    return [
+      [minLat, minLng],
+      [maxLat, maxLng],
+    ];
+  }, [samples]);
+
+  const track = useMemo<Array<[number, number]>>(() => {
+    if (sampleIndex < 0) return [];
+    const step = Math.max(1, Math.floor(samples.length / 500));
+    const points: Array<[number, number]> = [];
+    for (let index = 0; index <= sampleIndex; index += step) {
+      const sample = samples[index];
+      if (sample.latitude !== null && sample.longitude !== null) {
+        points.push([sample.latitude, sample.longitude]);
+      }
+    }
+    const last = samples[sampleIndex];
+    if (last.latitude !== null && last.longitude !== null) {
+      points.push([last.latitude, last.longitude]);
+    }
+    return points;
+  }, [samples, sampleIndex]);
+
+  const position: [number, number] | null =
+    currentSample &&
+    currentSample.latitude !== null &&
+    currentSample.longitude !== null
+      ? [currentSample.latitude, currentSample.longitude]
+      : null;
+
+  const revealedGpsEvents = useMemo(
+    () =>
+      decisions
+        .slice(0, revealedCount)
+        .filter(
+          (decision) =>
+            decision.decision === 'accepted' &&
+            decision.latitude !== null &&
+            decision.longitude !== null,
+        ),
+    [decisions, revealedCount],
+  );
+
+  const feed = useMemo(
+    () =>
+      decisions
+        .slice(0, revealedCount)
+        .slice(-FEED_LIMIT)
+        .reverse(),
+    [decisions, revealedCount],
+  );
+
+  const handlePlayPause = () => {
+    if (completed) {
+      setCurrentTime(0);
+      setCompleted(false);
+      setPlaying(true);
+      return;
+    }
+    setPlaying((prev) => !prev);
+  };
+
+  const handleRestart = () => {
+    setPlaying(false);
+    setCurrentTime(0);
+    setCompleted(false);
+  };
+
+  const handleSeek = (value: number) => {
+    setPlaying(false);
+    setCompleted(false);
+    setCurrentTime(value);
+  };
+
+  const statusLabel = completed
+    ? 'Replay complete'
+    : playing
+      ? 'Playing'
+      : currentTime > 0
+        ? 'Paused'
+        : 'Ready';
+
+  return (
+    <main className="app-main replay">
+      <div className="panel replay-header">
+        <div>
+          <h2 className="panel-title">Recorded RoadSens Journey Replay</h2>
+          <p className="replay-subtitle">
+            Replaying real recorded RoadSens-4M sensor rows and the detector
+            decisions already produced by <code>processor/detector.py</code>.
+            This is a recorded replay, not a live bus.
+          </p>
+        </div>
+        <label className="replay-session">
+          <span>Session</span>
+          <select
+            value={sessionId}
+            onChange={(changeEvent) => setSessionId(changeEvent.target.value)}
+          >
+            {replaySessions.map((item) => {
+              const accepted = item.decisions.filter(
+                (decision) => decision.decision === 'accepted',
+              ).length;
+              const suppressed = item.decisions.length - accepted;
+              return (
+                <option key={item.session_id} value={item.session_id}>
+                  Session {item.session_id} · {accepted} accepted ·{' '}
+                  {suppressed} suppressed · {item.duration_seconds.toFixed(1)}s
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      </div>
+
+      <div className="panel replay-controls">
+        <div className="control-row">
+          <button className="control-btn primary" onClick={handlePlayPause}>
+            {playing ? 'Pause' : completed ? 'Replay again' : 'Play'}
+          </button>
+          <button className="control-btn" onClick={handleRestart}>
+            Restart
+          </button>
+          <div className="speed-group" role="group" aria-label="Replay speed">
+            {SPEEDS.map((option) => (
+              <button
+                key={option}
+                className={`speed-btn${speed === option ? ' active' : ''}`}
+                onClick={() => setSpeed(option)}
+              >
+                {option}x
+              </button>
+            ))}
+          </div>
+          <span className={`replay-status${completed ? ' completed' : ''}`}>
+            {statusLabel}
+          </span>
+        </div>
+        <div className="replay-progress">
+          <input
+            type="range"
+            min={0}
+            max={duration || 1}
+            step={0.01}
+            value={currentTime}
+            onChange={(changeEvent) => handleSeek(Number(changeEvent.target.value))}
+            aria-label="Replay position"
+          />
+          <div className="progress-meta">
+            <span>{currentTime.toFixed(2)} s</span>
+            <span>{duration.toFixed(2)} s</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="replay-body">
+        <div className="panel replay-signals">
+          <div className="panel-head">
+            <h3 className="panel-title">Sensor &amp; evidence traces</h3>
+            <span className="panel-tag">rolling {WINDOW_SECONDS}s window</span>
+          </div>
+          <ReplayChart
+            samples={samples}
+            currentTime={currentTime}
+            windowSeconds={WINDOW_SECONDS}
+          />
+          <p className="panel-note">
+            Values are the recorded gravity-relative vertical acceleration,
+            unsigned horizontal acceleration magnitude, yaw/turning evidence and
+            rolling vibration RMS.
+          </p>
+        </div>
+
+        <div className="replay-side">
+          <DecisionCard decision={latest} candidateStage={candidateStage} />
+
+          <div className="panel replay-counters">
+            <div className="counter">
+              <span className="counter-value">{acceptedSoFar}</span>
+              <span className="counter-label">accepted so far</span>
+              <span className="counter-total">of {totalAccepted}</span>
+            </div>
+            <div className="counter">
+              <span className="counter-value">{suppressedSoFar}</span>
+              <span className="counter-label">suppressed so far</span>
+              <span className="counter-total">of {totalSuppressed}</span>
+            </div>
+          </div>
+
+          <div className="panel replay-feed">
+            <div className="panel-head">
+              <h3 className="panel-title">Decision feed</h3>
+              <span className="panel-tag">latest first</span>
+            </div>
+            {feed.length === 0 ? (
+              <p className="placeholder">No decisions yet.</p>
+            ) : (
+              <ul>
+                {feed.map((decision, index) => (
+                  <li
+                    key={`${decision.t}-${decision.start_row}-${index}`}
+                    className={`feed-item ${decision.decision}`}
+                  >
+                    <span className="feed-time">{decision.t.toFixed(2)}s</span>
+                    <span className="feed-icon">
+                      {decision.decision === 'accepted' ? '✓' : '✕'}
+                    </span>
+                    <span className="feed-label">
+                      {decision.decision === 'accepted'
+                        ? decision.event_type
+                          ? CLASS_META[decision.event_type].label
+                          : 'Accepted'
+                        : `Suppressed · ${
+                            decision.suppression_reason
+                              ? SUPPRESSION_LABELS[decision.suppression_reason]
+                              : ''
+                          }`}
+                    </span>
+                    {decision.decision === 'accepted' ? (
+                      <span className="feed-sev">
+                        sev {decision.severity.toFixed(1)}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="panel replay-map-panel">
+        <div className="panel-head">
+          <div>
+            <h3 className="panel-title">Revealed accepted GPS events</h3>
+            <p className="panel-subtitle">
+              {revealedGpsEvents.length} accepted event
+              {revealedGpsEvents.length === 1 ? '' : 's'} with real source GPS
+              revealed so far.
+            </p>
+          </div>
+        </div>
+        <ReplayMap
+          sessionId={sessionId}
+          bounds={sessionBounds}
+          track={track}
+          position={position}
+          events={revealedGpsEvents}
+        />
+        <p className="map-caption replay-caption">
+          Track and markers use real recorded RoadSens GPS coordinates. Markers
+          appear when their recorded event time is reached. Not road-network map
+          matching.
+        </p>
+      </div>
+    </main>
+  );
+}

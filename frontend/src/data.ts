@@ -4,16 +4,23 @@
 
 import eventsRaw from '../../data/demo/processed/events.json';
 import summaryRaw from '../../data/demo/processed/detector_summary.json';
+import replayRaw from '../../data/demo/processed/replay_sessions.json';
 
 import type {
   DetectorSummary,
   EventClass,
   EventRecord,
   EventsFile,
+  ReplayFile,
+  ReplaySession,
 } from './types';
 
 export const eventsFile = eventsRaw as unknown as EventsFile;
 export const summary = summaryRaw as unknown as DetectorSummary;
+export const replayFile = replayRaw as unknown as ReplayFile;
+
+/** Recorded RoadSens-4M sessions available for Journey Replay. */
+export const replaySessions: ReplaySession[] = replayFile.sessions;
 
 /** Accepted events only (events.json already contains accepted events). */
 export const acceptedEvents: EventRecord[] = eventsFile.events;
@@ -58,6 +65,27 @@ export function classMeta(eventClass: EventClass | null): ClassMeta | null {
   if (!eventClass) return null;
   return CLASS_META[eventClass] ?? null;
 }
+
+/** Human-readable labels for the detector evidence fields. */
+export const EVIDENCE_LABELS: Record<string, string> = {
+  peak_vertical_acceleration: 'Peak vertical acceleration (m/s²)',
+  peak_abs_vertical_acceleration: 'Peak |vertical acceleration| (m/s²)',
+  duration_seconds: 'Duration (s)',
+  local_vibration_rms: 'Local vibration RMS (m/s²)',
+  vertical_impulse: 'Vertical impulse',
+  rebound_ratio: 'Rebound ratio',
+  turning_activity: 'Turning activity (yaw)',
+  horizontal_activity: 'Horizontal activity',
+  gyroscope_magnitude: 'Gyroscope magnitude (rad/s)',
+  mean_vertical_rms: 'Mean vertical RMS (m/s²)',
+  peak_vertical_rms: 'Peak vertical RMS (m/s²)',
+};
+
+export const SUPPRESSION_LABELS: Record<string, string> = {
+  turning: 'Turning',
+  horizontal_motion: 'Horizontal motion',
+  noise: 'Noise',
+};
 
 /** Stable identity for an event record across the JSON payload. */
 export function eventKey(event: EventRecord): string {
