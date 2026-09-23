@@ -75,14 +75,11 @@ export default function DecisionCard({
       {resolved && accepted ? (
         <div className="decision-result">
           {meta ? (
-            <span
-              className="class-chip"
-              style={{
-                color: meta.color,
-                borderColor: meta.color,
-                backgroundColor: `rgba(${meta.rgb}, 0.14)`,
-              }}
-            >
+            <span className="class-chip" style={{ color: meta.color }}>
+              <span
+                className="class-dot"
+                style={{ background: meta.color }}
+              />
               {meta.label}
             </span>
           ) : null}

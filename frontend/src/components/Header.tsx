@@ -26,27 +26,24 @@ export default function Header({ view, onViewChange, onStartDemo }: HeaderProps)
         </div>
       </div>
 
-      <div className="header-right">
-        <nav className="view-tabs" aria-label="Dashboard views">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`view-tab${view === tab.key ? ' active' : ''}`}
-              onClick={() => onViewChange(tab.key)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-        <div className="header-badges">
-          <button className="demo-btn" onClick={onStartDemo}>
-            Demo Flow
+      <nav className="app-nav" aria-label="Dashboard views">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            className={`app-nav-item${view === tab.key ? ' active' : ''}`}
+            onClick={() => onViewChange(tab.key)}
+          >
+            {tab.label}
           </button>
-          <span className="badge badge-accent">Prototype</span>
-          <span className="badge">Public {summary.dataset} data</span>
-          <span className="badge badge-muted">Subset: {summary.subset}</span>
-        </div>
+        ))}
+      </nav>
+
+      <div className="header-actions">
+        <button className="demo-btn" onClick={onStartDemo}>
+          Demo Flow
+        </button>
       </div>
+      <span className="header-context">Prototype · {summary.dataset}</span>
     </header>
   );
 }

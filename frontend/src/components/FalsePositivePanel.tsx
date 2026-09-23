@@ -4,17 +4,17 @@ const REASON_META: Record<string, { label: string; description: string; color: s
   turning: {
     label: 'Turning',
     description: 'Sustained yaw / rotational activity.',
-    color: '#fbbf24',
+    color: '#e0a92e',
   },
   horizontal_motion: {
     label: 'Horizontal motion',
     description: 'Lateral/longitudinal shake without matching vertical impact.',
-    color: '#38bdf8',
+    color: '#4cc2ff',
   },
   noise: {
     label: 'Noise',
     description: 'Isolated vertical spike below the accept threshold.',
-    color: '#94a3b8',
+    color: '#8b98a8',
   },
 };
 
@@ -24,10 +24,10 @@ export default function FalsePositivePanel() {
   const max = Math.max(1, ...Object.values(reasons));
 
   return (
-    <section className="panel">
+    <section className="subpanel">
       <div className="panel-head">
         <h2 className="panel-title">False-positive suppression</h2>
-        <span className="panel-tag">{total} candidates suppressed</span>
+        <span className="panel-tag">{total} suppressed</span>
       </div>
       <ul className="reason-list">
         {Object.entries(REASON_META).map(([key, meta]) => {
@@ -35,9 +35,7 @@ export default function FalsePositivePanel() {
           return (
             <li key={key} className="reason-row">
               <div className="reason-row-head">
-                <span className="reason-name" style={{ color: meta.color }}>
-                  {meta.label}
-                </span>
+                <span className="reason-name">{meta.label}</span>
                 <span className="reason-count">{count}</span>
               </div>
               <div className="reason-track">
@@ -55,8 +53,7 @@ export default function FalsePositivePanel() {
         })}
       </ul>
       <p className="panel-note">
-        RoadPulse checks rotational and horizontal vehicle motion before
-        reporting a disturbance as a road-surface event.
+        RoadPulse checks vehicle motion before reporting a road-surface event.
       </p>
     </section>
   );

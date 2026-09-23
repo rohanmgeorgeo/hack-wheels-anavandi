@@ -102,10 +102,12 @@ export default function OperationsView({
         </aside>
       </div>
 
-      <div className="bottom-grid">
-        <FalsePositivePanel />
-        <TransparencyPanel />
-      </div>
+      <section className="panel secondary-panel">
+        <div className="secondary-grid">
+          <FalsePositivePanel />
+          <TransparencyPanel />
+        </div>
+      </section>
     </main>
   );
 }

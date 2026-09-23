@@ -290,74 +290,79 @@ export default function JourneyReplay({
         </div>
       ) : null}
 
-      <div className="panel replay-header">
-        <div>
-          <h2 className="panel-title">Recorded RoadSens Journey Replay</h2>
-          <p className="replay-subtitle">
-            Replaying real recorded RoadSens-4M sensor rows and the detector
-            decisions already produced by <code>processor/detector.py</code>.
-            This is a recorded replay, not a live bus.
-          </p>
-        </div>
-        <label className="replay-session">
-          <span>Session</span>
-          <select
-            value={sessionId}
-            onChange={(changeEvent) => onSessionChange(changeEvent.target.value)}
-          >
-            {replaySessions.map((item) => {
-              const accepted = item.decisions.filter(
-                (decision) => decision.decision === 'accepted',
-              ).length;
-              const suppressed = item.decisions.length - accepted;
-              return (
-                <option key={item.session_id} value={item.session_id}>
-                  Session {item.session_id} · {accepted} accepted ·{' '}
-                  {suppressed} suppressed · {item.duration_seconds.toFixed(1)}s
-                </option>
-              );
-            })}
-          </select>
-        </label>
-      </div>
-
-      <div className="panel replay-controls">
-        <div className="control-row">
-          <button className="control-btn primary" onClick={handlePlayPause}>
-            {playing ? 'Pause' : completed ? 'Replay again' : 'Play'}
-          </button>
-          <button className="control-btn" onClick={handleRestart}>
-            Restart
-          </button>
-          <div className="speed-group" role="group" aria-label="Replay speed">
-            {SPEEDS.map((option) => (
-              <button
-                key={option}
-                className={`speed-btn${speed === option ? ' active' : ''}`}
-                onClick={() => setSpeed(option)}
-              >
-                {option}x
-              </button>
-            ))}
+      <div className="panel replay-console">
+        <div className="console-top">
+          <div>
+            <h2 className="console-title">Recorded RoadSens Journey Replay</h2>
+            <span className="console-note">
+              Recorded replay · real detector decisions · not live bus
+              processing
+            </span>
           </div>
+          <label className="replay-session">
+            <span>Session</span>
+            <select
+              value={sessionId}
+              onChange={(changeEvent) => onSessionChange(changeEvent.target.value)}
+            >
+              {replaySessions.map((item) => {
+                const accepted = item.decisions.filter(
+                  (decision) => decision.decision === 'accepted',
+                ).length;
+                const suppressed = item.decisions.length - accepted;
+                return (
+                  <option key={item.session_id} value={item.session_id}>
+                    Session {item.session_id} · {accepted} accepted ·{' '}
+                    {suppressed} suppressed · {item.duration_seconds.toFixed(1)}s
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        </div>
+
+        <div className="console-bottom">
+          <div className="control-row">
+            <button className="control-btn primary" onClick={handlePlayPause}>
+              {playing ? 'Pause' : completed ? 'Replay again' : 'Play'}
+            </button>
+            <button className="control-btn" onClick={handleRestart}>
+              Restart
+            </button>
+            <div className="speed-group" role="group" aria-label="Replay speed">
+              {SPEEDS.map((option) => (
+                <button
+                  key={option}
+                  className={`speed-btn${speed === option ? ' active' : ''}`}
+                  onClick={() => setSpeed(option)}
+                >
+                  {option}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="replay-progress">
+            <input
+              type="range"
+              min={0}
+              max={duration || 1}
+              step={0.01}
+              value={currentTime}
+              onChange={(changeEvent) =>
+                handleSeek(Number(changeEvent.target.value))
+              }
+              aria-label="Replay position"
+            />
+            <div className="progress-meta">
+              <span>{currentTime.toFixed(2)} s</span>
+              <span>{duration.toFixed(2)} s</span>
+            </div>
+          </div>
+
           <span className={`replay-status${completed ? ' completed' : ''}`}>
             {statusLabel}
           </span>
-        </div>
-        <div className="replay-progress">
-          <input
-            type="range"
-            min={0}
-            max={duration || 1}
-            step={0.01}
-            value={currentTime}
-            onChange={(changeEvent) => handleSeek(Number(changeEvent.target.value))}
-            aria-label="Replay position"
-          />
-          <div className="progress-meta">
-            <span>{currentTime.toFixed(2)} s</span>
-            <span>{duration.toFixed(2)} s</span>
-          </div>
         </div>
       </div>
 

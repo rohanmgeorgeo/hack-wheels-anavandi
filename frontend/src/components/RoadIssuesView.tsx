@@ -33,6 +33,14 @@ const FILTERS: Array<{ key: IssueFilter; label: string }> = [
   { key: 'single', label: 'Single observation' },
 ];
 
+type InspectorSection = 'overview' | 'members' | 'method';
+
+const SECTIONS: Array<{ key: InspectorSection; label: string }> = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'members', label: 'Member observations' },
+  { key: 'method', label: 'Method' },
+];
+
 interface RoadIssuesViewProps {
   selectedIssueId: string | null;
   onSelectIssue: (issueId: string) => void;
@@ -46,14 +54,8 @@ function ClassChip({ issue }: { issue: RoadIssue }) {
   const meta = dominant ? CLASS_META[dominant] : null;
   if (!meta) return null;
   return (
-    <span
-      className="class-chip"
-      style={{
-        color: meta.color,
-        borderColor: meta.color,
-        backgroundColor: `rgba(${meta.rgb}, 0.14)`,
-      }}
-    >
+    <span className="class-chip" style={{ color: meta.color }}>
+      <span className="class-dot" style={{ background: meta.color }} />
       {meta.label}
     </span>
   );
@@ -68,6 +70,7 @@ export default function RoadIssuesView({
 }: RoadIssuesViewProps) {
   const sorted = useMemo(() => sortIssues(roadIssues), []);
   const [filter, setFilter] = useState<IssueFilter>('all');
+  const [section, setSection] = useState<InspectorSection>('overview');
 
   const selected =
     sorted.find((issue) => issue.issue_id === selectedIssueId) ?? sorted[0] ?? null;
@@ -81,30 +84,30 @@ export default function RoadIssuesView({
     [onSelectIssue],
   );
 
-  const metrics = [
+  const kpis = [
     {
       label: 'Spatial issues',
       value: summary.issue_count,
       hint: `from ${summary.accepted_gps_observations} GPS observations`,
-      accent: '#38bdf8',
+      color: '#4cc2ff',
     },
     {
-      label: 'GPS observations represented',
-      value: summary.accepted_gps_observations,
-      hint: 'accepted events with real source GPS',
-      accent: '#34d399',
-    },
-    {
-      label: 'Multi-observation issues',
+      label: 'Multi-observation',
       value: summary.multi_observation_issue_count,
-      hint: 'grouped from more than one observation',
-      accent: '#a78bfa',
+      hint: 'grouped from more than one',
+      color: '#9d8cf0',
     },
     {
-      label: 'Cross-session issues',
+      label: 'Cross-session',
       value: summary.multi_session_issue_count,
-      hint: `no clusters span sessions at ${radius} m in this subset`,
-      accent: '#64748b',
+      hint: `0 at ${radius} m in this subset`,
+      color: '#8b98a8',
+    },
+    {
+      label: 'GPS observations',
+      value: summary.accepted_gps_observations,
+      hint: 'accepted, real source GPS',
+      color: '#4bbf8f',
     },
   ];
 
@@ -116,9 +119,9 @@ export default function RoadIssuesView({
       <div className="panel issues-header">
         <div>
           <h2 className="panel-title">Proximity-based Road Issues</h2>
-          <p className="replay-subtitle">
-            Accepted detector observations with real GPS, grouped into spatial
-            issues. This is not road-network map matching.
+          <p className="panel-subtitle">
+            Accepted observations with real GPS, grouped into spatial issues.
+            Not road-network map matching.
           </p>
         </div>
         <span className="panel-tag">
@@ -126,16 +129,16 @@ export default function RoadIssuesView({
         </span>
       </div>
 
-      <section className="metrics metrics-4" aria-label="Road issue summary metrics">
-        {metrics.map((metric) => (
-          <article className="metric-card" key={metric.label}>
-            <span className="metric-bar" style={{ backgroundColor: metric.accent }} />
-            <div className="metric-body">
-              <span className="metric-value">{metric.value}</span>
-              <span className="metric-label">{metric.label}</span>
-              <span className="metric-hint">{metric.hint}</span>
-            </div>
-          </article>
+      <section className="kpi-strip" aria-label="Road issue summary metrics">
+        {kpis.map((kpi) => (
+          <div className="kpi" key={kpi.label}>
+            <span className="kpi-top">
+              <span className="kpi-dot" style={{ backgroundColor: kpi.color }} />
+              <span className="kpi-label">{kpi.label}</span>
+            </span>
+            <span className="kpi-value">{kpi.value}</span>
+            <span className="kpi-hint">{kpi.hint}</span>
+          </div>
         ))}
       </section>
 
@@ -145,8 +148,7 @@ export default function RoadIssuesView({
             <div>
               <h3 className="panel-title">Spatial Issue View</h3>
               <p className="panel-subtitle">
-                {sorted.length} issues · one marker per issue center · marker
-                colour follows the dominant event class.
+                {sorted.length} issues · one marker per issue center
               </p>
             </div>
           </div>
@@ -165,7 +167,7 @@ export default function RoadIssuesView({
 
         <aside className="side-column">
           <section className="panel issue-list-panel">
-            <div className="panel-head">
+            <div className="panel-head issue-list-head">
               <h3 className="panel-title">Issue list</h3>
               <span className="panel-tag">
                 {visible.length} of {sorted.length}
@@ -217,10 +219,7 @@ export default function RoadIssuesView({
                           'recorded sessions',
                         )}
                       </span>
-                      <span>max severity {formatNumber(issue.severity.max, 1)}</span>
-                      <span>
-                        mean confidence {formatNumber(issue.confidence.mean, 1)}
-                      </span>
+                      <span>max sev {formatNumber(issue.severity.max, 1)}</span>
                     </div>
                   </button>
                 </li>
@@ -255,76 +254,114 @@ export default function RoadIssuesView({
       ) : null}
 
       {selected ? (
-        <div className="issues-detail-grid">
-          <section className="panel issue-detail-panel">
-            <div className="details-head">
-              <h3 className="panel-title">{selected.issue_id}</h3>
+        <section className="panel issue-inspector">
+          <div className="issue-inspector-head">
+            <div className="issue-inspector-title">
+              <h3>{selected.issue_id}</h3>
               <ClassChip issue={selected} />
             </div>
-            <p className="panel-subtitle">
-              {selected.observation_count}{' '}
-              {pluralize(selected.observation_count, 'observation', 'observations')}{' '}
-              in {selected.distinct_session_count}{' '}
-              {pluralize(
-                selected.distinct_session_count,
-                'recorded session',
-                'recorded sessions',
-              )}
-              .
-            </p>
+            <div className="issue-inspector-facts">
+              <div className="issue-fact">
+                <span className="issue-fact-value">
+                  {selected.observation_count}
+                </span>
+                <span className="issue-fact-label">
+                  {pluralize(
+                    selected.observation_count,
+                    'observation',
+                    'observations',
+                  )}
+                </span>
+              </div>
+              <div className="issue-fact">
+                <span className="issue-fact-value">
+                  {selected.distinct_session_count}
+                </span>
+                <span className="issue-fact-label">
+                  {pluralize(
+                    selected.distinct_session_count,
+                    'recorded session',
+                    'recorded sessions',
+                  )}
+                </span>
+              </div>
+              <div className="issue-fact">
+                <span className="issue-fact-value">
+                  {formatNumber(selected.severity.max, 1)}
+                </span>
+                <span className="issue-fact-label">max severity</span>
+              </div>
+              <div className="issue-fact">
+                <span className="issue-fact-value">
+                  {formatNumber(selected.confidence.mean, 1)}
+                </span>
+                <span className="issue-fact-label">mean confidence</span>
+              </div>
+            </div>
+          </div>
 
-            <dl className="detail-list">
-              <div>
-                <dt>Center</dt>
-                <dd>{formatCoords(selected.center)}</dd>
-              </div>
-              <div>
-                <dt>Observation count</dt>
-                <dd>{selected.observation_count}</dd>
-              </div>
-              <div>
-                <dt>Distinct recorded sessions</dt>
-                <dd>{selected.distinct_session_count}</dd>
-              </div>
-              <div>
-                <dt>Session IDs</dt>
-                <dd>{selected.session_ids.join(', ')}</dd>
-              </div>
-              <div>
-                <dt>Class counts</dt>
-                <dd>
-                  {classCountEntries(selected)
-                    .map(([eventClass, count]) => `${eventClass}: ${count}`)
-                    .join(' · ')}
-                </dd>
-              </div>
-              <div>
-                <dt>Severity (mean / max)</dt>
-                <dd>
-                  {formatNumber(selected.severity.mean, 2)} /{' '}
-                  {formatNumber(selected.severity.max, 2)}
-                </dd>
-              </div>
-              <div>
-                <dt>Confidence (mean / max)</dt>
-                <dd>
-                  {formatNumber(selected.confidence.mean, 2)} /{' '}
-                  {formatNumber(selected.confidence.max, 2)}
-                </dd>
-              </div>
-              <div>
-                <dt>First / last event time</dt>
-                <dd>
-                  {formatSeconds(selected.first_observation_time)} /{' '}
-                  {formatSeconds(selected.last_observation_time)}
-                </dd>
-              </div>
-            </dl>
+          <div className="inspector-tabs" role="tablist">
+            {SECTIONS.map((item) => (
+              <button
+                key={item.key}
+                role="tab"
+                aria-selected={section === item.key}
+                className={`inspector-tab${section === item.key ? ' active' : ''}`}
+                onClick={() => setSection(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
 
-            <div className="detail-section">
-              <p className="detail-section-title">
-                Member observations ({selected.observations.length})
-              </p>
+          <div className="inspector-body">
+            {section === 'overview' ? (
+              <div className="inspector-grid">
+                <dl className="detail-list">
+                  <div>
+                    <dt>Center</dt>
+                    <dd>{formatCoords(selected.center)}</dd>
+                  </div>
+                  <div>
+                    <dt>Session IDs</dt>
+                    <dd>{selected.session_ids.join(', ')}</dd>
+                  </div>
+                  <div>
+                    <dt>Class counts</dt>
+                    <dd>
+                      {classCountEntries(selected)
+                        .map(([eventClass, count]) => `${eventClass}: ${count}`)
+                        .join(' · ')}
+                    </dd>
+                  </div>
+                </dl>
+                <dl className="detail-list">
+                  <div>
+                    <dt>Severity (mean / max)</dt>
+                    <dd>
+                      {formatNumber(selected.severity.mean, 2)} /{' '}
+                      {formatNumber(selected.severity.max, 2)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Confidence (mean / max)</dt>
+                    <dd>
+                      {formatNumber(selected.confidence.mean, 2)} /{' '}
+                      {formatNumber(selected.confidence.max, 2)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>First / last event time</dt>
+                    <dd>
+                      {formatSeconds(selected.first_observation_time)} /{' '}
+                      {formatSeconds(selected.last_observation_time)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ) : null}
+
+            {section === 'members' ? (
               <div className="member-table-wrap">
                 <table className="member-table">
                   <thead>
@@ -395,79 +432,81 @@ export default function RoadIssuesView({
                   </tbody>
                 </table>
               </div>
-            </div>
-          </section>
+            ) : null}
 
-          <div className="issues-side">
-            <section className="panel">
-              <h3 className="panel-title">How this issue was formed</h3>
-              <ul className="formation-list">
-                <li>
-                  <span>Spatial association</span>
-                  <span>{roadIssuesFile.association_method.type}</span>
-                </li>
-                <li>
-                  <span>Radius</span>
-                  <span>{radius} m</span>
-                </li>
-                <li>
-                  <span>Distance metric</span>
-                  <span>{roadIssuesFile.association_method.distance_metric}</span>
-                </li>
-                <li>
-                  <span>Members</span>
-                  <span>
-                    {selected.observation_count} accepted GPS{' '}
-                    {pluralize(
-                      selected.observation_count,
-                      'observation',
-                      'observations',
-                    )}
-                  </span>
-                </li>
-                <li>
-                  <span>Recorded sessions</span>
-                  <span>{selected.distinct_session_count}</span>
-                </li>
-              </ul>
-              <TracePipeline stage="issue" compact />
-              <p className="panel-note">
-                Every member belongs to the generated RoadPulse detector output.
-                Issue centers are derived from the member coordinates.
-              </p>
-              <p className="disclaimer">
-                Proximity association — not road-network map matching.
-              </p>
-            </section>
-
-            <section className="panel limitation-note">
-              <h3 className="panel-title">Current data limitation</h3>
-              <p className="panel-note">
-                Current RoadSens demo sessions cover different locations, so no
-                spatial issue contains observations from more than one recorded
-                session at the {radius} m association radius. Cross-session
-                corroboration remains a fleet-data capability, not a demonstrated
-                result in this subset.
-              </p>
-            </section>
-
-            <section className="panel future-card">
-              <h3 className="panel-title">Fleet progression</h3>
-              <div className="future-step current">
-                <span className="future-badge">CURRENT</span>
-                <span>accepted event → spatial issue</span>
+            {section === 'method' ? (
+              <div>
+                <ul className="formation-list">
+                  <li>
+                    <span>Spatial association</span>
+                    <span>{roadIssuesFile.association_method.type}</span>
+                  </li>
+                  <li>
+                    <span>Radius</span>
+                    <span>{radius} m</span>
+                  </li>
+                  <li>
+                    <span>Distance metric</span>
+                    <span>{roadIssuesFile.association_method.distance_metric}</span>
+                  </li>
+                  <li>
+                    <span>Members</span>
+                    <span>
+                      {selected.observation_count} accepted GPS{' '}
+                      {pluralize(
+                        selected.observation_count,
+                        'observation',
+                        'observations',
+                      )}
+                    </span>
+                  </li>
+                  <li>
+                    <span>Recorded sessions</span>
+                    <span>{selected.distinct_session_count}</span>
+                  </li>
+                </ul>
+                <TracePipeline stage="issue" compact />
+                <p className="panel-note">
+                  Every member belongs to the generated RoadPulse detector
+                  output. Issue centers are derived from the member coordinates.
+                </p>
+                <p className="detail-footnote">
+                  Proximity association — not road-network map matching.
+                </p>
               </div>
-              <div className="future-step next">
-                <span className="future-badge">FUTURE / NEXT</span>
-                <span>
-                  spatial issue → repeated-session evidence → maintenance
-                  intelligence
-                </span>
-              </div>
-            </section>
+            ) : null}
           </div>
-        </div>
+        </section>
       ) : null}
+
+      <div className="context-blocks">
+        <section className="context-block">
+          <h3>Current data limitation</h3>
+          <p>
+            Current RoadSens demo sessions cover different locations, so no
+            spatial issue contains observations from more than one recorded
+            session at the {radius} m association radius. Cross-session
+            corroboration remains a fleet-data capability, not a demonstrated
+            result in this subset.
+          </p>
+        </section>
+        <section className="context-block">
+          <h3>Fleet progression</h3>
+          <div className="future-steps">
+            <div className="future-step current">
+              <span className="future-badge">Current</span>
+              <span>accepted event → spatial issue</span>
+            </div>
+            <div className="future-step next">
+              <span className="future-badge">Future</span>
+              <span>
+                spatial issue → repeated-session evidence → maintenance
+                intelligence
+              </span>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

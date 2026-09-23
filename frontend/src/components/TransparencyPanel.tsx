@@ -5,7 +5,7 @@ export default function TransparencyPanel() {
   const training = summary.classifier.training_counts;
 
   return (
-    <section className="panel">
+    <section className="subpanel">
       <div className="panel-head">
         <h2 className="panel-title">Detection notes &amp; model transparency</h2>
       </div>

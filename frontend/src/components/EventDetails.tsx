@@ -42,8 +42,8 @@ export default function EventDetails({
 }: EventDetailsProps) {
   if (!event) {
     return (
-      <div className="panel details-panel">
-        <p className="panel-title">Selected event</p>
+      <div className="panel inspector">
+        <p className="section-label">Selected event</p>
         <p className="placeholder">
           Select a marker on the map to inspect its detector evidence.
         </p>
@@ -55,90 +55,70 @@ export default function EventDetails({
   const evidence = Object.entries(event.evidence) as Array<[string, number]>;
 
   return (
-    <div className="panel details-panel">
-      <div className="details-head">
-        <span className="panel-title">Selected event</span>
+    <div className="panel inspector">
+      <div className="inspector-head">
+        <div>
+          <span className="inspector-eyebrow">Selected event</span>
+          <h3 className="inspector-title">{meta?.label ?? 'Unclassified'}</h3>
+        </div>
         <span
           className="class-chip"
-          style={{
-            color: meta?.color ?? '#cbd5e1',
-            borderColor: meta?.color ?? '#334155',
-            backgroundColor: meta ? `rgba(${meta.rgb}, 0.14)` : '#1e293b',
-          }}
+          style={{ color: meta?.color ?? 'var(--text-2)' }}
         >
-          {meta?.label ?? 'Unclassified'}
+          <span
+            className="class-dot"
+            style={{ background: meta?.color ?? 'var(--text-3)' }}
+          />
+          Session {event.session_id}
         </span>
       </div>
 
-      <div className="score-grid">
-        <ScoreBar label="Severity score" value={event.severity_score} />
-        <ScoreBar label="Confidence score" value={event.confidence_score} />
+      <div className="inspector-section">
+        <p className="section-label">Summary</p>
+        <div className="score-grid">
+          <ScoreBar label="Severity score" value={event.severity_score} />
+          <ScoreBar label="Confidence score" value={event.confidence_score} />
+        </div>
       </div>
 
-      <dl className="detail-list">
-        <div>
-          <dt>Session ID</dt>
-          <dd>{event.session_id}</dd>
-        </div>
-        <div>
-          <dt>Event time</dt>
-          <dd>{formatTimeRange(event.start_time, event.end_time)}</dd>
-        </div>
-        <div>
-          <dt>Peak time</dt>
-          <dd>{formatSeconds(event.peak_time)}</dd>
-        </div>
-        <div>
-          <dt>Rows</dt>
-          <dd>
-            {event.start_row}–{event.end_row}
-            {event.peak_row !== null ? ` (peak ${event.peak_row})` : ''}
-          </dd>
-        </div>
-        <div>
-          <dt>Provenance</dt>
-          <dd>{PROVENANCE_LABELS[event.provenance] ?? event.provenance}</dd>
-        </div>
-        <div>
-          <dt>GPS</dt>
-          <dd>
-            {event.gps
-              ? formatCoords(event.gps)
-              : 'No GPS in source — not plotted on the map.'}
-          </dd>
-        </div>
-      </dl>
+      <div className="inspector-section">
+        <p className="section-label">Location</p>
+        <dl className="detail-list">
+          <div>
+            <dt>GPS</dt>
+            <dd>
+              {event.gps
+                ? formatCoords(event.gps)
+                : 'No GPS in source — not plotted.'}
+            </dd>
+          </div>
+          <div>
+            <dt>Rows</dt>
+            <dd>
+              {event.start_row}–{event.end_row}
+              {event.peak_row !== null ? ` (peak ${event.peak_row})` : ''}
+            </dd>
+          </div>
+        </dl>
+      </div>
 
-      {linkedIssue && onViewIssue ? (
-        <div className="detail-section trace-action">
-          <p className="detail-section-title">Traceability</p>
-          <p className="detail-footnote">
-            Part of {linkedIssue.issue_id}: {linkedIssue.observation_count}{' '}
-            {pluralize(
-              linkedIssue.observation_count,
-              'observation',
-              'observations',
-            )}{' '}
-            in {linkedIssue.distinct_session_count}{' '}
-            {pluralize(
-              linkedIssue.distinct_session_count,
-              'recorded session',
-              'recorded sessions',
-            )}
-            .
-          </p>
-          <button className="trace-btn" onClick={onViewIssue}>
-            View spatial issue
-          </button>
-        </div>
-      ) : !event.gps ? (
-        <p className="detail-footnote">
-          No spatial issue: this event has no source GPS.
-        </p>
-      ) : null}
+      <div className="inspector-section">
+        <p className="section-label">Detector evidence</p>
+        <dl className="detail-list">
+          <div>
+            <dt>Event time</dt>
+            <dd>{formatTimeRange(event.start_time, event.end_time)}</dd>
+          </div>
+          <div>
+            <dt>Peak time</dt>
+            <dd>{formatSeconds(event.peak_time)}</dd>
+          </div>
+          <div>
+            <dt>Provenance</dt>
+            <dd>{PROVENANCE_LABELS[event.provenance] ?? event.provenance}</dd>
+          </div>
+        </dl>
 
-      <div className="detail-section">
-        <p className="detail-section-title">Detector evidence / features</p>
         <ul className="evidence-list">
           {evidence.map(([key, value]) => (
             <li key={key}>
@@ -147,28 +127,26 @@ export default function EventDetails({
             </li>
           ))}
         </ul>
-      </div>
 
-      {event.class_distances ? (
-        <div className="detail-section">
-          <p className="detail-section-title">Classifier distances</p>
-          <ul className="evidence-list">
-            {Object.entries(event.class_distances).map(([label, distance]) => (
-              <li key={label}>
-                <span>{label}</span>
-                <span className="evidence-value">{formatNumber(distance, 3)}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="detail-footnote">
-            Nearest-centroid distances after standardization; lower is closer.
-          </p>
-        </div>
-      ) : null}
+        {event.class_distances ? (
+          <>
+            <ul className="evidence-list">
+              {Object.entries(event.class_distances).map(([label, distance]) => (
+                <li key={label}>
+                  <span>{label} distance</span>
+                  <span className="evidence-value">
+                    {formatNumber(distance, 3)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="detail-footnote">
+              Nearest-centroid distances after standardization; lower is closer.
+            </p>
+          </>
+        ) : null}
 
-      {event.truth_label ? (
-        <div className="detail-section">
-          <p className="detail-section-title">Source annotation</p>
+        {event.truth_label ? (
           <ul className="evidence-list">
             <li>
               <span>Supplied label</span>
@@ -181,8 +159,40 @@ export default function EventDetails({
               </span>
             </li>
           </ul>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
+
+      <div className="inspector-section">
+        <p className="section-label">Traceability</p>
+        {linkedIssue && onViewIssue ? (
+          <div className="trace-action">
+            <p className="detail-footnote">
+              Part of {linkedIssue.issue_id}: {linkedIssue.observation_count}{' '}
+              {pluralize(
+                linkedIssue.observation_count,
+                'observation',
+                'observations',
+              )}{' '}
+              in {linkedIssue.distinct_session_count}{' '}
+              {pluralize(
+                linkedIssue.distinct_session_count,
+                'recorded session',
+                'recorded sessions',
+              )}
+              .
+            </p>
+            <button className="trace-btn" onClick={onViewIssue}>
+              View spatial issue
+            </button>
+          </div>
+        ) : !event.gps ? (
+          <p className="detail-footnote">
+            No spatial issue: this event has no source GPS.
+          </p>
+        ) : (
+          <p className="detail-footnote">No spatial issue membership.</p>
+        )}
+      </div>
 
       <p className="disclaimer">
         Severity and confidence are prototype analytical scores, not official
