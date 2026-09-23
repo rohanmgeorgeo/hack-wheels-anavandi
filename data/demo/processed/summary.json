@@ -1,0 +1,74 @@
+{
+  "dataset": "RoadSens-4M",
+  "subset": "roadpulse-demo",
+  "generated_by": "scripts/prepare_demo_data.py",
+  "sessions": [
+    {
+      "session_id": "2",
+      "source_name": "session-2.csv",
+      "source_archive": "data/extracted/Combined CSV with GIS and Weather Data/Road Anomalies/Road Anomalies.rar",
+      "source_member": "2.csv",
+      "schema": "anomaly",
+      "row_count": 1111,
+      "expected_row_count": 1111,
+      "row_count_ok": true,
+      "gps_available": true,
+      "annotation_available": true,
+      "annotation_region_count": 1,
+      "annotation_row_counts": {
+        "Bump": 991
+      }
+    },
+    {
+      "session_id": "4",
+      "source_name": "session-4.csv",
+      "source_archive": "data/extracted/Combined CSV with GIS and Weather Data/Road Anomalies/Road Anomalies.rar",
+      "source_member": "4.csv",
+      "schema": "anomaly",
+      "row_count": 2549,
+      "expected_row_count": 2549,
+      "row_count_ok": true,
+      "gps_available": true,
+      "annotation_available": true,
+      "annotation_region_count": 3,
+      "annotation_row_counts": {
+        "Bump": 2021,
+        "Pothole": 67
+      }
+    },
+    {
+      "session_id": "35",
+      "source_name": "session-35.csv",
+      "source_archive": "data/extracted/Combined CSV with GIS and Weather Data/Road Anomalies/Road Anomalies.rar",
+      "source_member": "35.csv",
+      "schema": "anomaly",
+      "row_count": 906,
+      "expected_row_count": 906,
+      "row_count_ok": true,
+      "gps_available": true,
+      "annotation_available": true,
+      "annotation_region_count": 1,
+      "annotation_row_counts": {
+        "Pothole": 462
+      }
+    },
+    {
+      "session_id": "9",
+      "source_name": "session-9-normal.csv",
+      "source_archive": "data/extracted/Combined CSV with GIS and Weather Data/Normal Road (No Annotation)/Normal Road (No Annotation).rar",
+      "source_member": "9 - Normal Road.csv",
+      "schema": "normal",
+      "row_count": 5214,
+      "expected_row_count": 5214,
+      "row_count_ok": true,
+      "gps_available": false,
+      "annotation_available": false,
+      "annotation_region_count": 0,
+      "annotation_row_counts": {}
+    }
+  ],
+  "totals": {
+    "rows": 9780,
+    "annotation_regions": 5
+  }
+}

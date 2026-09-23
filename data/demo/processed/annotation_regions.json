@@ -1,0 +1,139 @@
+{
+  "dataset": "RoadSens-4M",
+  "subset": "roadpulse-demo",
+  "regions": [
+    {
+      "session_id": "2",
+      "label": "Bump",
+      "start_row": 121,
+      "end_row": 1111,
+      "start_time": 1.29,
+      "end_time": 11.19,
+      "duration_seconds": 9.899999999999999,
+      "gps": {
+        "start": {
+          "latitude": 24.3732912,
+          "longitude": 88.5313421
+        },
+        "end": {
+          "latitude": 24.3732399,
+          "longitude": 88.5311182
+        },
+        "centroid": {
+          "latitude": 24.373268586831482,
+          "longitude": 88.53120376947528
+        }
+      },
+      "press_durations_ms": [
+        128.0
+      ]
+    },
+    {
+      "session_id": "4",
+      "label": "Bump",
+      "start_row": 247,
+      "end_row": 1079,
+      "start_time": 2.55,
+      "end_time": 10.87,
+      "duration_seconds": 8.32,
+      "gps": {
+        "start": {
+          "latitude": 24.373631937,
+          "longitude": 88.534452398
+        },
+        "end": {
+          "latitude": 24.373579442,
+          "longitude": 88.53384044399999
+        },
+        "centroid": {
+          "latitude": 24.373610708564225,
+          "longitude": 88.53414971368787
+        }
+      },
+      "press_durations_ms": [
+        48.0,
+        67.0
+      ]
+    },
+    {
+      "session_id": "4",
+      "label": "Pothole",
+      "start_row": 1203,
+      "end_row": 1269,
+      "start_time": 12.11,
+      "end_time": 12.77,
+      "duration_seconds": 0.6600000000000001,
+      "gps": {
+        "start": {
+          "latitude": 24.37357592608696,
+          "longitude": 88.53378404347825
+        },
+        "end": {
+          "latitude": 24.37357243246753,
+          "longitude": 88.5337622181818
+        },
+        "centroid": {
+          "latitude": 24.373574340198218,
+          "longitude": 88.53377347997758
+        }
+      },
+      "press_durations_ms": [
+        121.0,
+        44.0
+      ]
+    },
+    {
+      "session_id": "4",
+      "label": "Bump",
+      "start_row": 1362,
+      "end_row": 2549,
+      "start_time": 13.7,
+      "end_time": 25.57,
+      "duration_seconds": 11.870000000000001,
+      "gps": {
+        "start": {
+          "latitude": 24.373568012,
+          "longitude": 88.533734216
+        },
+        "end": {
+          "latitude": 24.3735071,
+          "longitude": 88.5332858
+        },
+        "centroid": {
+          "latitude": 24.37353528221549,
+          "longitude": 88.53349106102357
+        }
+      },
+      "press_durations_ms": [
+        66.0
+      ]
+    },
+    {
+      "session_id": "35",
+      "label": "Pothole",
+      "start_row": 327,
+      "end_row": 788,
+      "start_time": 3.35,
+      "end_time": 7.96,
+      "duration_seconds": 4.609999999999999,
+      "gps": {
+        "start": {
+          "latitude": 24.375713208,
+          "longitude": 88.622927768
+        },
+        "end": {
+          "latitude": 24.375718276,
+          "longitude": 88.62304338599999
+        },
+        "centroid": {
+          "latitude": 24.375713008277057,
+          "longitude": 88.62298216972728
+        }
+      },
+      "press_durations_ms": [
+        83.0,
+        46.0
+      ]
+    }
+  ]
+}
