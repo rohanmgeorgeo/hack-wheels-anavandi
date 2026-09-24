@@ -97,7 +97,7 @@ export interface SummaryValidation {
   separation_note: string;
 }
 
-export type View = 'operations' | 'replay' | 'issues';
+export type View = 'operations' | 'replay' | 'issues' | 'fleet';
 
 export type PipelineStage = 'sensor' | 'decision' | 'observation' | 'issue';
 

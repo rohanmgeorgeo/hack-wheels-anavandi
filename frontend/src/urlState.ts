@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 import type { View } from './types';
 
-const VIEWS: View[] = ['operations', 'replay', 'issues'];
+const VIEWS: View[] = ['operations', 'replay', 'issues', 'fleet'];
 
 export interface UrlState {
   view: View;

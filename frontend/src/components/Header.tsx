@@ -14,6 +14,7 @@ const TABS: Array<{ key: View; label: string }> = [
   { key: 'operations', label: 'Operations' },
   { key: 'replay', label: 'Journey Replay' },
   { key: 'issues', label: 'Road Issues' },
+  { key: 'fleet', label: 'Fleet Device' },
 ];
 
 export default function Header({

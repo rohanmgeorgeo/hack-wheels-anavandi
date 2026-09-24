@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import DemoStatusBar from './components/DemoStatusBar';
+import FleetDeviceView from './components/FleetDeviceView';
 import Header from './components/Header';
 import JourneyReplay from './components/JourneyReplay';
 import OperationsView from './components/OperationsView';
@@ -249,6 +250,7 @@ export default function App() {
           trace={issueTrace}
         />
       ) : null}
+      {view === 'fleet' ? <FleetDeviceView /> : null}
       </div>
 
       <DemoStatusBar />
