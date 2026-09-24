@@ -3,10 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DecisionCard from './DecisionCard';
 import ReplayChart from './ReplayChart';
 import ReplayMap from './ReplayMap';
+import ReplayTimeline from './ReplayTimeline';
 import TracePipeline from './TracePipeline';
-import { CLASS_META, replaySessions, SUPPRESSION_LABELS } from '../data';
+import BasemapToggle from './BasemapToggle';
+import { CLASS_META, SUPPRESSION_LABELS } from '../data';
+import { useReplaySessions } from '../replayData';
 import { findIssueForReplayDecision } from '../traceability';
-import type { IssueTrace, ReplaySeekRequest } from '../types';
+import type { IssueTrace, ReplayDecision, ReplaySeekRequest } from '../types';
 
 const SPEEDS = [1, 4, 10];
 const WINDOW_SECONDS = 5;
@@ -31,11 +34,12 @@ export default function JourneyReplay({
   demoActive,
   onDismissDemo,
 }: JourneyReplayProps) {
+  const { sessions: replaySessions, ready: sessionsReady } = useReplaySessions();
   const session = useMemo(
     () =>
       replaySessions.find((item) => item.session_id === sessionId) ??
       replaySessions[0],
-    [sessionId],
+    [sessionId, replaySessions],
   );
 
   const samples = session?.samples ?? [];
@@ -253,6 +257,76 @@ export default function JourneyReplay({
     setCurrentTime(value);
   };
 
+  // Seek the recorded clock to a real decision timestamp (timeline / feed / demo).
+  const handleSeekToDecision = (decision: ReplayDecision) => {
+    setPlaying(false);
+    setCompleted(false);
+    setCurrentTime(Math.min(duration, Math.max(0, decision.t)));
+  };
+
+  const firstDecision = decisions[0] ?? null;
+  const firstAcceptedDecision =
+    decisions.find((decision) => decision.decision === 'accepted') ?? null;
+
+  const jumpToDecision = (direction: 'next' | 'prev') => {
+    if (direction === 'next') {
+      const next = decisions.find((decision) => decision.t > currentTime + 1e-6);
+      if (next) handleSeekToDecision(next);
+    } else {
+      const previous = [...decisions]
+        .reverse()
+        .find((decision) => decision.t < currentTime - 1e-6);
+      if (previous) handleSeekToDecision(previous);
+    }
+  };
+
+  const handleDemoStep = (decision: ReplayDecision | null) => {
+    if (decision) handleSeekToDecision(decision);
+  };
+
+  const handleDemoTrace = () => {
+    if (latestIssue) handleViewLatestIssue();
+  };
+
+  // Replay keyboard: space toggles play/pause, arrows scrub ±1s.
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'SELECT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'BUTTON'
+      ) {
+        return;
+      }
+      if (target?.isContentEditable) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === ' ') {
+        event.preventDefault();
+        if (completed) {
+          setCurrentTime(0);
+          setCompleted(false);
+          setPlaying(true);
+        } else {
+          setPlaying((prev) => !prev);
+        }
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setPlaying(false);
+        setCurrentTime((prev) => Math.max(0, prev - 1));
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setPlaying(false);
+        setCurrentTime((prev) => Math.min(duration, prev + 1));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [completed, duration]);
+
   const statusLabel = completed
     ? 'Replay complete'
     : playing
@@ -260,6 +334,16 @@ export default function JourneyReplay({
       : currentTime > 0
         ? 'Paused'
         : 'Ready';
+
+  if (!sessionsReady) {
+    return (
+      <main className="app-main replay">
+        <div className="panel">
+          <p className="placeholder">Loading recorded replay data…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="app-main replay">
@@ -275,9 +359,40 @@ export default function JourneyReplay({
             </button>
           </div>
           <ol className="demo-steps">
-            <li>Watch detector decisions</li>
-            <li>Open an accepted observation</li>
-            <li>Trace it to its spatial issue</li>
+            <li className="demo-step">
+              <span className="demo-step-num">1</span>
+              <span>Sensor evidence</span>
+            </li>
+            <li className="demo-step">
+              <span className="demo-step-num">2</span>
+              <button
+                className="demo-step-btn"
+                onClick={() => handleDemoStep(firstDecision)}
+                disabled={!firstDecision}
+              >
+                Detector decision
+              </button>
+            </li>
+            <li className="demo-step">
+              <span className="demo-step-num">3</span>
+              <button
+                className="demo-step-btn"
+                onClick={() => handleDemoStep(firstAcceptedDecision)}
+                disabled={!firstAcceptedDecision}
+              >
+                Accepted observation
+              </button>
+            </li>
+            <li className="demo-step">
+              <span className="demo-step-num">4</span>
+              <button
+                className="demo-step-btn"
+                onClick={handleDemoTrace}
+                disabled={!latestIssue}
+              >
+                Spatial issue
+              </button>
+            </li>
           </ol>
           <p className="demo-note">
             Also show one suppressed candidate — RoadPulse does not turn every
@@ -329,6 +444,20 @@ export default function JourneyReplay({
             <button className="control-btn" onClick={handleRestart}>
               Restart
             </button>
+            <button
+              className="control-btn"
+              onClick={() => jumpToDecision('prev')}
+              title="Previous detector event"
+            >
+              Prev event
+            </button>
+            <button
+              className="control-btn"
+              onClick={() => jumpToDecision('next')}
+              title="Next detector event"
+            >
+              Next event
+            </button>
             <div className="speed-group" role="group" aria-label="Replay speed">
               {SPEEDS.map((option) => (
                 <button
@@ -341,33 +470,39 @@ export default function JourneyReplay({
               ))}
             </div>
           </div>
-
-          <div className="replay-progress">
-            <input
-              type="range"
-              min={0}
-              max={duration || 1}
-              step={0.01}
-              value={currentTime}
-              onChange={(changeEvent) =>
-                handleSeek(Number(changeEvent.target.value))
-              }
-              aria-label="Replay position"
-            />
-            <div className="progress-meta">
-              <span>{currentTime.toFixed(2)} s</span>
-              <span>{duration.toFixed(2)} s</span>
-            </div>
-          </div>
-
           <span className={`replay-status${completed ? ' completed' : ''}`}>
             {statusLabel}
           </span>
         </div>
+
+        <div className="replay-progress">
+          <input
+            type="range"
+            min={0}
+            max={duration || 1}
+            step={0.01}
+            value={currentTime}
+            onChange={(changeEvent) =>
+              handleSeek(Number(changeEvent.target.value))
+            }
+            aria-label="Replay position"
+          />
+          <ReplayTimeline
+            decisions={decisions}
+            currentTime={currentTime}
+            duration={duration}
+            currentDecisionT={latest ? latest.t : null}
+            onSeek={handleSeek}
+          />
+          <div className="progress-meta">
+            <span>{currentTime.toFixed(2)} s</span>
+            <span>{duration.toFixed(2)} s</span>
+          </div>
+        </div>
       </div>
 
       <div className="replay-body">
-        <div className="panel replay-signals">
+        <div className="panel replay-signals" data-tour="replay-signals">
           <div className="panel-head">
             <h3 className="panel-title">Sensor &amp; evidence traces</h3>
             <span className="panel-tag">rolling {WINDOW_SECONDS}s window</span>
@@ -403,6 +538,11 @@ export default function JourneyReplay({
               <span className="counter-label">suppressed so far</span>
               <span className="counter-total">of {totalSuppressed}</span>
             </div>
+            <div className="counter">
+              <span className="counter-value">{revealedGpsEvents.length}</span>
+              <span className="counter-label">GPS revealed</span>
+              <span className="counter-total">real source coordinates</span>
+            </div>
           </div>
 
           <div className="panel replay-feed">
@@ -415,30 +555,35 @@ export default function JourneyReplay({
             ) : (
               <ul>
                 {feed.map((decision, index) => (
-                  <li
-                    key={`${decision.t}-${decision.start_row}-${index}`}
-                    className={`feed-item ${decision.decision}`}
-                  >
-                    <span className="feed-time">{decision.t.toFixed(2)}s</span>
-                    <span className="feed-icon">
-                      {decision.decision === 'accepted' ? '✓' : '✕'}
-                    </span>
-                    <span className="feed-label">
-                      {decision.decision === 'accepted'
-                        ? decision.event_type
-                          ? CLASS_META[decision.event_type].label
-                          : 'Accepted'
-                        : `Suppressed · ${
-                            decision.suppression_reason
-                              ? SUPPRESSION_LABELS[decision.suppression_reason]
-                              : ''
-                          }`}
-                    </span>
-                    {decision.decision === 'accepted' ? (
-                      <span className="feed-sev">
-                        sev {decision.severity.toFixed(1)}
+                  <li key={`${decision.t}-${decision.start_row}-${index}`}>
+                    <button
+                      className={`feed-item ${decision.decision}`}
+                      onClick={() => handleSeekToDecision(decision)}
+                      title={`Seek to ${decision.t.toFixed(2)}s`}
+                    >
+                      <span className="feed-time">
+                        {decision.t.toFixed(2)}s
                       </span>
-                    ) : null}
+                      <span className="feed-icon">
+                        {decision.decision === 'accepted' ? '✓' : '✕'}
+                      </span>
+                      <span className="feed-label">
+                        {decision.decision === 'accepted'
+                          ? decision.event_type
+                            ? CLASS_META[decision.event_type].label
+                            : 'Accepted'
+                          : `Suppressed · ${
+                              decision.suppression_reason
+                                ? SUPPRESSION_LABELS[decision.suppression_reason]
+                                : ''
+                            }`}
+                      </span>
+                      {decision.decision === 'accepted' ? (
+                        <span className="feed-sev">
+                          sev {decision.severity.toFixed(1)}
+                        </span>
+                      ) : null}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -447,7 +592,7 @@ export default function JourneyReplay({
         </div>
       </div>
 
-      <div className="panel replay-map-panel">
+      <div className="panel replay-map-panel" data-tour="replay-map">
         <div className="panel-head">
           <div>
             <h3 className="panel-title">Revealed accepted GPS events</h3>
@@ -465,11 +610,14 @@ export default function JourneyReplay({
           position={position}
           events={revealedGpsEvents}
         />
-        <p className="map-caption replay-caption">
-          Track and markers use real recorded RoadSens GPS coordinates. Markers
-          appear when their recorded event time is reached. Not road-network map
-          matching.
-        </p>
+        <div className="map-footer replay-map-footer">
+          <BasemapToggle />
+          <p className="map-caption replay-caption">
+            Track and markers use real recorded RoadSens GPS coordinates. Markers
+            appear when their recorded event time is reached. Not road-network map
+            matching.
+          </p>
+        </div>
       </div>
     </main>
   );

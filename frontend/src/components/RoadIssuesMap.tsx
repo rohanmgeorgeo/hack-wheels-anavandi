@@ -3,10 +3,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { CLASS_META } from '../data';
+import { useBasemap } from '../basemap';
+import { BASE_LAYERS } from '../mapTiles';
 import { dominantClass } from '../roadIssues';
 import type { RoadIssue } from '../types';
-
-const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 interface RoadIssuesMapProps {
   issues: RoadIssue[];
@@ -30,9 +30,11 @@ export default function RoadIssuesMap({
 }: RoadIssuesMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const markersRef = useRef<Record<string, L.CircleMarker>>({});
   const baseRadiusRef = useRef<Record<string, number>>({});
+  const basemap = useBasemap();
 
   const bounds = useMemo(() => {
     const box = L.latLngBounds([]);
@@ -49,21 +51,35 @@ export default function RoadIssuesMap({
       zoom: 14,
       zoomControl: true,
     });
-    L.tileLayer(OSM_TILES, {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
 
     return () => {
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
       layerRef.current = null;
       markersRef.current = {};
       baseRadiusRef.current = {};
     };
   }, []);
+
+  // Basemap layer (dark CARTO or OpenStreetMap standard), swapped on change.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (tileRef.current) {
+      map.removeLayer(tileRef.current);
+      tileRef.current = null;
+    }
+    const config = BASE_LAYERS[basemap];
+    tileRef.current = L.tileLayer(config.url, {
+      maxZoom: config.maxZoom,
+      subdomains: config.subdomains,
+      attribution: config.attribution,
+    }).addTo(map);
+    tileRef.current.bringToBack();
+  }, [basemap]);
 
   useEffect(() => {
     const map = mapRef.current;

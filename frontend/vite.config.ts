@@ -11,4 +11,17 @@ export default defineConfig({
       allow: ['..'],
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep vendor libraries in stable, cacheable chunks. The generated
+        // detector JSON is intentionally loaded eagerly from a single source of
+        // truth and remains in the app chunk.
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          leaflet: ['leaflet'],
+        },
+      },
+    },
+  },
 });

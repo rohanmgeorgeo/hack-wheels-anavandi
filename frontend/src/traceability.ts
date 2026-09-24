@@ -5,7 +5,7 @@
 // A link between an event and a spatial issue is created ONLY when this stable
 // identity matches exactly. There is no nearest-neighbour or fuzzy matching.
 
-import { acceptedEvents, replaySessions, roadIssues } from './data';
+import { acceptedEvents, roadIssues } from './data';
 import type { EventRecord, ReplayDecision, RoadIssue } from './types';
 
 export function observationId(
@@ -77,8 +77,4 @@ export function findIssueForReplayDecision(
 
 export function findIssueById(issueId: string): RoadIssue | null {
   return issueByIssueId.get(issueId) ?? null;
-}
-
-export function hasReplaySession(sessionId: string): boolean {
-  return replaySessions.some((session) => session.session_id === sessionId);
 }

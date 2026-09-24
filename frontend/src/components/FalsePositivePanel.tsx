@@ -14,7 +14,7 @@ const REASON_META: Record<string, { label: string; description: string; color: s
   noise: {
     label: 'Noise',
     description: 'Isolated vertical spike below the accept threshold.',
-    color: '#8b98a8',
+    color: 'var(--text-3)',
   },
 };
 
@@ -53,7 +53,8 @@ export default function FalsePositivePanel() {
         })}
       </ul>
       <p className="panel-note">
-        RoadPulse checks vehicle motion before reporting a road-surface event.
+        Candidates are preserved for audit but rejected when vehicle-motion or
+        noise evidence contradicts a road-impact interpretation.
       </p>
     </section>
   );

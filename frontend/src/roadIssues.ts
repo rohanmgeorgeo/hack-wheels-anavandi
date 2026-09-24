@@ -53,6 +53,49 @@ export function filterIssues(issues: RoadIssue[], filter: IssueFilter): RoadIssu
   return issues;
 }
 
+export type IssueSort = 'priority' | 'observations' | 'severity' | 'id';
+
+export function searchIssues(issues: RoadIssue[], query: string): RoadIssue[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return issues;
+  return issues.filter((issue) => {
+    const dominant = dominantClass(issue);
+    const haystack = [
+      issue.issue_id,
+      ...issue.session_ids,
+      ...Object.keys(issue.class_counts),
+      dominant ?? '',
+    ]
+      .join(' ')
+      .toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+
+/** Deterministic issue ordering choices. "priority" is the default ranking. */
+export function sortIssuesBy(issues: RoadIssue[], sort: IssueSort): RoadIssue[] {
+  if (sort === 'priority') return sortIssues(issues);
+  const copy = [...issues];
+  if (sort === 'observations') {
+    copy.sort(
+      (a, b) =>
+        b.observation_count - a.observation_count ||
+        b.severity.max - a.severity.max ||
+        a.issue_id.localeCompare(b.issue_id),
+    );
+  } else if (sort === 'severity') {
+    copy.sort(
+      (a, b) =>
+        b.severity.max - a.severity.max ||
+        b.observation_count - a.observation_count ||
+        a.issue_id.localeCompare(b.issue_id),
+    );
+  } else {
+    copy.sort((a, b) => a.issue_id.localeCompare(b.issue_id));
+  }
+  return copy;
+}
+
 export function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural;
 }

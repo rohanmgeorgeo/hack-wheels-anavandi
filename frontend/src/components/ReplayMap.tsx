@@ -3,9 +3,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { CLASS_META } from '../data';
+import { useBasemap } from '../basemap';
+import { BASE_LAYERS } from '../mapTiles';
 import type { ReplayDecision } from '../types';
-
-const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 interface ReplayMapProps {
   sessionId: string;
@@ -24,9 +24,11 @@ export default function ReplayMap({
 }: ReplayMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
   const eventLayerRef = useRef<L.LayerGroup | null>(null);
   const trackLineRef = useRef<L.Polyline | null>(null);
   const positionRef = useRef<L.CircleMarker | null>(null);
+  const basemap = useBasemap();
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -35,14 +37,10 @@ export default function ReplayMap({
       zoom: 14,
       zoomControl: true,
     });
-    L.tileLayer(OSM_TILES, {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
     mapRef.current = map;
     eventLayerRef.current = L.layerGroup().addTo(map);
     trackLineRef.current = L.polyline([], {
-      color: '#38bdf8',
+      color: '#4cc2ff',
       weight: 2,
       opacity: 0.55,
     }).addTo(map);
@@ -50,11 +48,29 @@ export default function ReplayMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
       eventLayerRef.current = null;
       trackLineRef.current = null;
       positionRef.current = null;
     };
   }, []);
+
+  // Basemap layer (dark CARTO or OpenStreetMap standard), swapped on change.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (tileRef.current) {
+      map.removeLayer(tileRef.current);
+      tileRef.current = null;
+    }
+    const config = BASE_LAYERS[basemap];
+    tileRef.current = L.tileLayer(config.url, {
+      maxZoom: config.maxZoom,
+      subdomains: config.subdomains,
+      attribution: config.attribution,
+    }).addTo(map);
+    tileRef.current.bringToBack();
+  }, [basemap]);
 
   // Fit the recorded journey extent once per session (stable frame).
   useEffect(() => {

@@ -294,6 +294,35 @@ placed on a map and never enter spatial clustering; no coordinates are invented.
 
 ---
 
+## Console features
+
+The dashboard is a dark-first operations console with a light theme toggle.
+
+* **Basemaps** — switch between CARTO Dark Matter and the standard
+  **OpenStreetMap** tile service from any map footer. Tiles need connectivity;
+  the analytical UI renders without them.
+* **Operations** — compact KPI strip, map-first workspace, a searchable/filterable
+  event list, and an inspector with Summary / Location / Detector evidence /
+  Traceability sections.
+* **Journey Replay** — recorded session playback with an event timeline whose
+  markers use real decision timestamps (click to seek), a "Why this decision?"
+  explainability block driven only by stored evidence + real thresholds, a
+  clickable decision feed, counters, and progressive GPS reveal.
+* **Road Issues** — issue search/sort, a tabbed inspector (Overview / Member
+  observations / Method) with a per-issue mini-map.
+* **OpenStreetMap API** — optional nearest-place lookup via Nominatim reverse
+  geocoding (cached, rate-limited, degrades silently offline), labelled as a
+  preview and never mixed with the real source GPS.
+* **Exports** — download accepted events as CSV and the spatial issue
+  aggregation as JSON. Print styles produce a light, chrome-free summary.
+* **Deep links & keyboard** — view/selection state is reflected in the URL
+  (`?view=&event=&issue=&session=`); `1/2/3` switch views, and in replay
+  `Space` plays/pauses while `←/→` scrub.
+* **Performance** — the large recorded-session payload is loaded on demand, so
+  the initial JavaScript bundle is small (~173 kB; ~37 kB gzip).
+
+---
+
 ## Offline behaviour
 
 * The dashboard UI **and** all analytical results render from the local

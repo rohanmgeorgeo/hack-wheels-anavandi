@@ -11,6 +11,7 @@ type ChannelKey =
 interface Channel {
   key: ChannelKey;
   label: string;
+  meaning: string;
   unit: string;
   color: string;
   signed: boolean;
@@ -19,14 +20,16 @@ interface Channel {
 const CHANNELS: Channel[] = [
   {
     key: 'vertical_acceleration',
-    label: 'Vertical impact (gravity-relative)',
+    label: 'Vertical acceleration',
+    meaning: 'road-impact evidence',
     unit: 'm/s²',
     color: '#f87171',
     signed: true,
   },
   {
     key: 'horizontal_acceleration',
-    label: 'Horizontal motion (unsigned magnitude)',
+    label: 'Horizontal acceleration',
+    meaning: 'vehicle-motion evidence',
     unit: 'm/s²',
     color: '#38bdf8',
     signed: false,
@@ -34,6 +37,7 @@ const CHANNELS: Channel[] = [
   {
     key: 'yaw_rate',
     label: 'Yaw / turning evidence',
+    meaning: 'turning evidence',
     unit: 'rad/s',
     color: '#fbbf24',
     signed: true,
@@ -41,6 +45,7 @@ const CHANNELS: Channel[] = [
   {
     key: 'rolling_rms',
     label: 'Rolling vibration RMS',
+    meaning: 'persistent vibration evidence',
     unit: 'm/s²',
     color: '#a78bfa',
     signed: false,
@@ -129,8 +134,11 @@ export default function ReplayChart({
         return (
           <div className="trace" key={channel.key}>
             <div className="trace-head">
-              <span className="trace-label" style={{ color: channel.color }}>
-                {channel.label}
+              <span className="trace-label-wrap">
+                <span className="trace-label" style={{ color: channel.color }}>
+                  {channel.label}
+                </span>
+                <span className="trace-meaning">{channel.meaning}</span>
               </span>
               <span className="trace-value">
                 {value === null ? '—' : `${value.toFixed(3)} ${channel.unit}`}

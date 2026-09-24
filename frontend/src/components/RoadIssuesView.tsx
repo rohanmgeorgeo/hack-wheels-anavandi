@@ -2,6 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 
 import RoadIssuesMap from './RoadIssuesMap';
 import TracePipeline from './TracePipeline';
+import IssueMiniMap from './IssueMiniMap';
+import LocationLookup from './LocationLookup';
+import BasemapToggle from './BasemapToggle';
 import {
   CLASS_META,
   formatCoords,
@@ -16,10 +19,14 @@ import {
   dominantClass,
   filterIssues,
   pluralize,
+  searchIssues,
   sortIssues,
+  sortIssuesBy,
 } from '../roadIssues';
-import { findEventForObservationId, hasReplaySession } from '../traceability';
-import type { IssueFilter } from '../roadIssues';
+import { downloadJson } from '../export';
+import { findEventForObservationId } from '../traceability';
+import { useReplaySessions } from '../replayData';
+import type { IssueFilter, IssueSort } from '../roadIssues';
 import type { IssueTrace, RoadIssue } from '../types';
 
 const PROVENANCE_LABELS: Record<string, string> = {
@@ -69,12 +76,19 @@ export default function RoadIssuesView({
   trace,
 }: RoadIssuesViewProps) {
   const sorted = useMemo(() => sortIssues(roadIssues), []);
+  const { sessions: replaySessions, ready: replayReady } = useReplaySessions();
   const [filter, setFilter] = useState<IssueFilter>('all');
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<IssueSort>('priority');
   const [section, setSection] = useState<InspectorSection>('overview');
 
   const selected =
     sorted.find((issue) => issue.issue_id === selectedIssueId) ?? sorted[0] ?? null;
-  const visible = useMemo(() => filterIssues(sorted, filter), [sorted, filter]);
+  const visible = useMemo(() => {
+    const searched = searchIssues(sorted, query);
+    const filtered = filterIssues(searched, filter);
+    return sortIssuesBy(filtered, sort);
+  }, [sorted, query, filter, sort]);
 
   const radius = roadIssuesFile.association_method.radius_meters;
   const summary = roadIssuesSummary;
@@ -101,7 +115,7 @@ export default function RoadIssuesView({
       label: 'Cross-session',
       value: summary.multi_session_issue_count,
       hint: `0 at ${radius} m in this subset`,
-      color: '#8b98a8',
+      color: 'var(--text-3)',
     },
     {
       label: 'GPS observations',
@@ -124,9 +138,19 @@ export default function RoadIssuesView({
             Not road-network map matching.
           </p>
         </div>
-        <span className="panel-tag">
-          Radius {radius} m · {roadIssuesFile.association_method.distance_metric}
-        </span>
+        <div className="issues-header-actions">
+          <span className="panel-tag">
+            Radius {radius} m · {roadIssuesFile.association_method.distance_metric}
+          </span>
+          <button
+            className="trace-btn small"
+            onClick={() =>
+              downloadJson('roadpulse-road-issues.json', roadIssuesFile)
+            }
+          >
+            Export issues JSON
+          </button>
+        </div>
       </div>
 
       <section className="kpi-strip" aria-label="Road issue summary metrics">
@@ -143,7 +167,7 @@ export default function RoadIssuesView({
       </section>
 
       <div className="content-grid">
-        <section className="panel map-panel">
+        <section className="panel map-panel" data-tour="issues-map">
           <div className="panel-head map-head">
             <div>
               <h3 className="panel-title">Spatial Issue View</h3>
@@ -158,6 +182,7 @@ export default function RoadIssuesView({
             onSelect={handleSelect}
           />
           <div className="map-footer">
+            <BasemapToggle />
             <p className="map-caption">
               Nearby accepted observations are grouped using a {radius} m
               prototype proximity rule. This is not road-network map matching.
@@ -174,16 +199,40 @@ export default function RoadIssuesView({
               </span>
             </div>
 
-            <div className="filter-row" role="group" aria-label="Issue filters">
-              {FILTERS.map((option) => (
-                <button
-                  key={option.key}
-                  className={`filter-btn${filter === option.key ? ' active' : ''}`}
-                  onClick={() => setFilter(option.key)}
+            <div className="event-filters">
+              <input
+                type="search"
+                className="search-input"
+                placeholder="Search issues…"
+                value={query}
+                onChange={(changeEvent) => setQuery(changeEvent.target.value)}
+                aria-label="Search issues"
+              />
+              <div className="filter-row" role="group" aria-label="Issue filters">
+                {FILTERS.map((option) => (
+                  <button
+                    key={option.key}
+                    className={`filter-btn${filter === option.key ? ' active' : ''}`}
+                    onClick={() => setFilter(option.key)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <label className="select-field">
+                <span>Sort</span>
+                <select
+                  value={sort}
+                  onChange={(changeEvent) =>
+                    setSort(changeEvent.target.value as IssueSort)
+                  }
                 >
-                  {option.label}
-                </button>
-              ))}
+                  <option value="priority">Default ranking</option>
+                  <option value="observations">Observations (high → low)</option>
+                  <option value="severity">Max severity (high → low)</option>
+                  <option value="id">Issue ID</option>
+                </select>
+              </label>
             </div>
 
             <ul className="issue-list">
@@ -316,48 +365,57 @@ export default function RoadIssuesView({
 
           <div className="inspector-body">
             {section === 'overview' ? (
-              <div className="inspector-grid">
-                <dl className="detail-list">
-                  <div>
-                    <dt>Center</dt>
-                    <dd>{formatCoords(selected.center)}</dd>
-                  </div>
-                  <div>
-                    <dt>Session IDs</dt>
-                    <dd>{selected.session_ids.join(', ')}</dd>
-                  </div>
-                  <div>
-                    <dt>Class counts</dt>
-                    <dd>
-                      {classCountEntries(selected)
-                        .map(([eventClass, count]) => `${eventClass}: ${count}`)
-                        .join(' · ')}
-                    </dd>
-                  </div>
-                </dl>
-                <dl className="detail-list">
-                  <div>
-                    <dt>Severity (mean / max)</dt>
-                    <dd>
-                      {formatNumber(selected.severity.mean, 2)} /{' '}
-                      {formatNumber(selected.severity.max, 2)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Confidence (mean / max)</dt>
-                    <dd>
-                      {formatNumber(selected.confidence.mean, 2)} /{' '}
-                      {formatNumber(selected.confidence.max, 2)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>First / last event time</dt>
-                    <dd>
-                      {formatSeconds(selected.first_observation_time)} /{' '}
-                      {formatSeconds(selected.last_observation_time)}
-                    </dd>
-                  </div>
-                </dl>
+              <div className="inspector-overview">
+                <div className="inspector-grid">
+                  <dl className="detail-list">
+                    <div>
+                      <dt>Center</dt>
+                      <dd>{formatCoords(selected.center)}</dd>
+                    </div>
+                    <div>
+                      <dt>Session IDs</dt>
+                      <dd>{selected.session_ids.join(', ')}</dd>
+                    </div>
+                    <div>
+                      <dt>Class counts</dt>
+                      <dd>
+                        {classCountEntries(selected)
+                          .map(([eventClass, count]) => `${eventClass}: ${count}`)
+                          .join(' · ')}
+                      </dd>
+                    </div>
+                  </dl>
+                  <dl className="detail-list">
+                    <div>
+                      <dt>Severity (mean / max)</dt>
+                      <dd>
+                        {formatNumber(selected.severity.mean, 2)} /{' '}
+                        {formatNumber(selected.severity.max, 2)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Confidence (mean / max)</dt>
+                      <dd>
+                        {formatNumber(selected.confidence.mean, 2)} /{' '}
+                        {formatNumber(selected.confidence.max, 2)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>First / last event time</dt>
+                      <dd>
+                        {formatSeconds(selected.first_observation_time)} /{' '}
+                        {formatSeconds(selected.last_observation_time)}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+                <div className="inspector-overview-side">
+                  <IssueMiniMap issue={selected} />
+                  <LocationLookup
+                    latitude={selected.center.latitude}
+                    longitude={selected.center.longitude}
+                  />
+                </div>
               </div>
             ) : null}
 
@@ -383,7 +441,11 @@ export default function RoadIssuesView({
                       );
                       const canReplay =
                         observation.event_time !== null &&
-                        hasReplaySession(observation.session_id);
+                        replayReady &&
+                        replaySessions.some(
+                          (session) =>
+                            session.session_id === observation.session_id,
+                        );
                       return (
                         <tr key={observation.observation_id}>
                           <td>{observation.session_id}</td>

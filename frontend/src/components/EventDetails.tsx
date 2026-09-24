@@ -7,6 +7,7 @@ import {
   formatTimeRange,
 } from '../data';
 import { pluralize } from '../roadIssues';
+import LocationLookup from './LocationLookup';
 import type { EventRecord, RoadIssue } from '../types';
 
 interface EventDetailsProps {
@@ -45,7 +46,7 @@ export default function EventDetails({
       <div className="panel inspector">
         <p className="section-label">Selected event</p>
         <p className="placeholder">
-          Select a marker on the map to inspect its detector evidence.
+          Select a mapped observation to inspect detector evidence.
         </p>
       </div>
     );
@@ -100,6 +101,12 @@ export default function EventDetails({
             </dd>
           </div>
         </dl>
+        {event.gps ? (
+          <LocationLookup
+            latitude={event.gps.latitude}
+            longitude={event.gps.longitude}
+          />
+        ) : null}
       </div>
 
       <div className="inspector-section">

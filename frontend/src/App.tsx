@@ -1,24 +1,105 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import DemoStatusBar from './components/DemoStatusBar';
 import Header from './components/Header';
 import JourneyReplay from './components/JourneyReplay';
 import OperationsView from './components/OperationsView';
 import RoadIssuesView from './components/RoadIssuesView';
-import { replaySessions } from './data';
+import TourOverlay from './components/TourOverlay';
+import TourWelcome from './components/TourWelcome';
+import { loadReplaySessions, useReplaySessions } from './replayData';
 import { observationIdForEvent } from './traceability';
-import type { EventRecord, IssueTrace, ReplaySeekRequest, View } from './types';
+import { TOUR_STEPS } from './tourSteps';
+import { hasSeenTour, markTourSeen, resetTourPreference } from './tourStorage';
+import { readUrlState, useUrlSync } from './urlState';
+import type {
+  EventRecord,
+  IssueTrace,
+  ReplaySeekRequest,
+  ReplaySession,
+  View,
+} from './types';
 
 export default function App() {
-  const [view, setView] = useState<View>('operations');
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
+  const initialUrl = useMemo(() => readUrlState(), []);
+  const { sessions: replaySessions, ready: replayReady } = useReplaySessions();
+  const [view, setView] = useState<View>(initialUrl.view ?? 'operations');
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(
+    initialUrl.event ?? null,
+  );
+  const [selectedIssueId, setSelectedIssueId] = useState<string | null>(
+    initialUrl.issue ?? null,
+  );
   const [issueTrace, setIssueTrace] = useState<IssueTrace | null>(null);
   const [replaySessionId, setReplaySessionId] = useState<string>(
-    replaySessions[0]?.session_id ?? '',
+    initialUrl.session ?? '',
   );
   const [replaySeek, setReplaySeek] = useState<ReplaySeekRequest | null>(null);
   const [demoActive, setDemoActive] = useState(false);
+
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
+
+  // First visit: offer the guided tour once (persisted in localStorage).
+  useEffect(() => {
+    if (!hasSeenTour()) setShowWelcome(true);
+  }, []);
+
+  // Resolve the replay session once the recorded data has loaded.
+  useEffect(() => {
+    if (!replayReady || replaySessions.length === 0) return;
+    setReplaySessionId((current) => {
+      if (current && replaySessions.some((s) => s.session_id === current)) {
+        return current;
+      }
+      const candidate = initialUrl.session;
+      if (candidate && replaySessions.some((s) => s.session_id === candidate)) {
+        return candidate;
+      }
+      return replaySessions[0].session_id;
+    });
+  }, [replayReady, replaySessions, initialUrl.session]);
+
+
+  // Development-only reset hook; never exposed as a visible control.
+  useEffect(() => {
+    const isDev =
+      (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+    if (!isDev) return;
+    (window as unknown as { roadpulseResetTour?: () => void }).roadpulseResetTour =
+      () => {
+        resetTourPreference();
+        setTourStep(0);
+        setTourActive(false);
+        setShowWelcome(true);
+      };
+  }, []);
+
+  // Keep the URL in sync so views/selections are shareable and refresh-safe.
+  useUrlSync({
+    view,
+    event: selectedEventId,
+    issue: selectedIssueId,
+    session: replaySessionId,
+  });
+
+  // Keyboard shortcuts: 1/2/3 switch views (ignored while a dialog is open).
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (target?.isContentEditable) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.key === '1') setView('operations');
+      else if (event.key === '2') setView('replay');
+      else if (event.key === '3') setView('issues');
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   // Open the exact spatial issue that contains an observation (no fuzzy match).
   const openIssue = useCallback((issueId: string, trace: IssueTrace) => {
@@ -53,20 +134,92 @@ export default function App() {
   }, []);
 
   const startDemo = useCallback(() => {
-    const target =
-      replaySessions.find((session) => session.session_id === '4')?.session_id ??
-      replaySessions[0]?.session_id ??
-      '';
-    setReplaySessionId(target);
-    setReplaySeek({ sessionId: target, time: 0, speed: 4, nonce: Date.now() });
-    setDemoActive(true);
-    setView('replay');
+    const run = (sessions: ReplaySession[]) => {
+      const target =
+        sessions.find((session) => session.session_id === '4')?.session_id ??
+        sessions[0]?.session_id ??
+        '';
+      setReplaySessionId(target);
+      setReplaySeek({ sessionId: target, time: 0, speed: 4, nonce: Date.now() });
+      setDemoActive(true);
+      setView('replay');
+    };
+    if (replaySessions.length > 0) run(replaySessions);
+    else void loadReplaySessions().then(run);
+  }, [replaySessions]);
+
+  const applyTourStep = useCallback((stepIndex: number) => {
+    const step = TOUR_STEPS[stepIndex];
+    setTourStep(stepIndex);
+    setView(step.view);
   }, []);
+
+  const startTour = useCallback(() => {
+    markTourSeen();
+    setShowWelcome(false);
+    setTourActive(true);
+    applyTourStep(0);
+  }, [applyTourStep]);
+
+  const finishTour = useCallback(() => {
+    markTourSeen();
+    setTourActive(false);
+  }, []);
+
+  const skipTour = useCallback(() => {
+    markTourSeen();
+    setTourActive(false);
+    setShowWelcome(false);
+  }, []);
+
+  const dismissWelcome = useCallback(() => {
+    markTourSeen();
+    setShowWelcome(false);
+  }, []);
+
+  const tourNext = useCallback(() => {
+    applyTourStep(Math.min(TOUR_STEPS.length - 1, tourStep + 1));
+  }, [applyTourStep, tourStep]);
+
+  const tourBack = useCallback(() => {
+    applyTourStep(Math.max(0, tourStep - 1));
+  }, [applyTourStep, tourStep]);
+
+  // Tour-safe action: seek to a real accepted decision in the recorded session.
+  const tourAction = useCallback(
+    (action: 'showExample') => {
+      if (action !== 'showExample') return;
+      const run = (sessions: ReplaySession[]) => {
+        const session =
+          sessions.find((item) => item.session_id === replaySessionId) ??
+          sessions[0];
+        if (!session) return;
+        const example =
+          session.decisions.find(
+            (decision) => decision.decision === 'accepted',
+          ) ?? session.decisions[0];
+        if (!example) return;
+        replayAt(session.session_id, Math.max(0, example.t));
+      };
+      if (replaySessions.length > 0) run(replaySessions);
+      else void loadReplaySessions().then(run);
+    },
+    [replayAt, replaySessionId, replaySessions],
+  );
 
   return (
     <div className="app">
-      <Header view={view} onViewChange={setView} onStartDemo={startDemo} />
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <Header
+        view={view}
+        onViewChange={setView}
+        onStartDemo={startDemo}
+        onStartTour={startTour}
+      />
 
+      <div id="main" className="app-views">
       {view === 'operations' ? (
         <OperationsView
           selectedEventId={selectedEventId}
@@ -96,6 +249,7 @@ export default function App() {
           trace={issueTrace}
         />
       ) : null}
+      </div>
 
       <DemoStatusBar />
 
@@ -106,6 +260,21 @@ export default function App() {
           are unavailable, the analytical panels still render.
         </p>
       </footer>
+
+      {tourActive ? (
+        <TourOverlay
+          index={tourStep}
+          onNext={tourNext}
+          onBack={tourBack}
+          onSkip={skipTour}
+          onFinish={finishTour}
+          onAction={tourAction}
+        />
+      ) : null}
+
+      {showWelcome && !tourActive ? (
+        <TourWelcome onStart={startTour} onDismiss={dismissWelcome} />
+      ) : null}
     </div>
   );
 }

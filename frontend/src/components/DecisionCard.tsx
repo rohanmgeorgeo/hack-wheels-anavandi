@@ -4,6 +4,7 @@ import {
   formatNumber,
   SUPPRESSION_LABELS,
 } from '../data';
+import { explainDecision } from '../explainDecision';
 import type { ReplayDecision, RoadIssue } from '../types';
 
 interface DecisionCardProps {
@@ -28,12 +29,9 @@ export default function DecisionCard({
 }: DecisionCardProps) {
   if (!decision) {
     return (
-      <div className="panel decision-card">
+      <div className="panel decision-card" data-tour="replay-decision">
         <h2 className="panel-title">Latest detector decision</h2>
-        <p className="placeholder">
-          Press Play to replay the recorded journey. Detector decisions appear at
-          their recorded times.
-        </p>
+        <p className="placeholder">Start replay to inspect detector decisions.</p>
       </div>
     );
   }
@@ -42,6 +40,7 @@ export default function DecisionCard({
   const meta = decision.event_type ? CLASS_META[decision.event_type] : null;
   const resolved = !candidateStage;
   const accepted = decision.decision === 'accepted';
+  const explanation = explainDecision(decision);
 
   const stateClass = !resolved
     ? 'decision-candidate'
@@ -55,13 +54,49 @@ export default function DecisionCard({
       : '✕ SUPPRESSED';
 
   return (
-    <div className="panel decision-card">
+    <div className="panel decision-card" data-tour="replay-decision">
       <div className="panel-head">
         <h2 className="panel-title">Latest detector decision</h2>
         <span className="panel-tag">t = {decision.t.toFixed(2)} s</span>
       </div>
 
       <div className={`decision-state ${stateClass}`}>{stateLabel}</div>
+
+      {resolved ? (
+        <div className="why-block">
+          <p className="section-label">
+            {accepted ? 'Why accepted' : 'Why suppressed'}
+          </p>
+          <ul className="why-list">
+            {explanation.checks.map((check, index) => (
+              <li key={index} className={check.ok ? 'ok' : 'no'}>
+                <span className="why-icon" aria-hidden="true">
+                  {check.ok ? '✓' : '✕'}
+                </span>
+                <span>{check.text}</span>
+              </li>
+            ))}
+          </ul>
+          {explanation.thresholds.length > 0 ? (
+            <details className="why-details">
+              <summary>Technical thresholds</summary>
+              <ul className="evidence-list">
+                {explanation.thresholds.map((threshold) => (
+                  <li key={threshold.label}>
+                    <span>{threshold.label}</span>
+                    <span className="evidence-value">
+                      {formatNumber(threshold.value, 4)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="detail-footnote">
+                Values from detector_summary.json.
+              </p>
+            </details>
+          ) : null}
+        </div>
+      ) : null}
 
       <ul className="evidence-list decision-evidence">
         {evidence.map(([key, value]) => (
@@ -76,10 +111,7 @@ export default function DecisionCard({
         <div className="decision-result">
           {meta ? (
             <span className="class-chip" style={{ color: meta.color }}>
-              <span
-                className="class-dot"
-                style={{ background: meta.color }}
-              />
+              <span className="class-dot" style={{ background: meta.color }} />
               {meta.label}
             </span>
           ) : null}

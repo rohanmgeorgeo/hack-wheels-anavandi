@@ -3,6 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { CLASS_META, eventKey } from '../data';
+import { useBasemap } from '../basemap';
+import { BASE_LAYERS } from '../mapTiles';
 import type { EventRecord } from '../types';
 
 interface EventMapProps {
@@ -12,8 +14,6 @@ interface EventMapProps {
   showRoutes: boolean;
 }
 
-const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-
 export default function EventMap({
   events,
   selected,
@@ -22,9 +22,11 @@ export default function EventMap({
 }: EventMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
   const markerLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const markersRef = useRef<Record<string, L.CircleMarker>>({});
+  const basemap = useBasemap();
 
   const bounds = useMemo(() => {
     const box = L.latLngBounds([]);
@@ -42,21 +44,35 @@ export default function EventMap({
       zoom: 14,
       zoomControl: true,
     });
-    L.tileLayer(OSM_TILES, {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
     mapRef.current = map;
     markerLayerRef.current = L.layerGroup().addTo(map);
 
     return () => {
       map.remove();
       mapRef.current = null;
+      tileRef.current = null;
       markerLayerRef.current = null;
       routeLayerRef.current = null;
       markersRef.current = {};
     };
   }, []);
+
+  // Basemap layer (dark CARTO or OpenStreetMap standard), swapped on change.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (tileRef.current) {
+      map.removeLayer(tileRef.current);
+      tileRef.current = null;
+    }
+    const config = BASE_LAYERS[basemap];
+    tileRef.current = L.tileLayer(config.url, {
+      maxZoom: config.maxZoom,
+      subdomains: config.subdomains,
+      attribution: config.attribution,
+    }).addTo(map);
+    tileRef.current.bringToBack();
+  }, [basemap]);
 
   // Fit the view to the real event coordinates whenever they change.
   useEffect(() => {
@@ -80,13 +96,14 @@ export default function EventMap({
       const gps = event.gps;
       if (!gps) return;
       const color = event.class ? CLASS_META[event.class].color : '#94a3b8';
-      const radius = 6 + Math.min(Math.max(event.severity_score, 0), 100) / 100 * 9;
+      const radius = 5 + (Math.min(Math.max(event.severity_score, 0), 100) / 100) * 10;
       const marker = L.circleMarker([gps.latitude, gps.longitude], {
         radius,
         color,
-        weight: 2,
+        weight: 1.5,
         fillColor: color,
-        fillOpacity: 0.55,
+        fillOpacity: 0.35,
+        className: 'event-marker',
       });
       marker.bindTooltip(
         `${event.class ?? 'Event'} · session ${event.session_id} · severity ${event.severity_score.toFixed(1)}`,
@@ -141,8 +158,9 @@ export default function EventMap({
     Object.entries(markersRef.current).forEach(([markerKey, marker]) => {
       const isSelected = markerKey === key;
       marker.setStyle({
-        weight: isSelected ? 4 : 2,
-        fillOpacity: isSelected ? 0.9 : 0.55,
+        color: isSelected ? '#f8fafc' : marker.options.color,
+        weight: isSelected ? 2.5 : 1.5,
+        fillOpacity: isSelected ? 0.85 : 0.35,
       });
       if (isSelected) marker.bringToFront();
     });

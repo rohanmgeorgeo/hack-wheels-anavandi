@@ -1,8 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import EventDetails from './EventDetails';
+import EventList from './EventList';
 import EventMap from './EventMap';
+import BasemapToggle from './BasemapToggle';
 import FalsePositivePanel from './FalsePositivePanel';
+import InsightsPanel from './InsightsPanel';
 import Legend from './Legend';
 import SummaryMetrics from './SummaryMetrics';
 import TransparencyPanel from './TransparencyPanel';
@@ -56,8 +59,8 @@ export default function OperationsView({
     <main className="app-main">
       <SummaryMetrics />
 
-      <div className="content-grid">
-        <section className="panel map-panel">
+      <div className="ops-grid">
+        <section className="panel map-panel ops-map">
           <div className="panel-head map-head">
             <div>
               <h2 className="panel-title">GPS Event View</h2>
@@ -84,7 +87,10 @@ export default function OperationsView({
           />
 
           <div className="map-footer">
-            <Legend />
+            <div className="map-footer-group">
+              <Legend />
+              <BasemapToggle />
+            </div>
             <p className="map-caption">
               Connections are straight lines between detected events in the same
               session, ordered by row. This is <strong>not</strong> road-segment
@@ -93,13 +99,19 @@ export default function OperationsView({
           </div>
         </section>
 
-        <aside className="side-column">
-          <EventDetails
-            event={selected}
-            linkedIssue={linkedIssue}
-            onViewIssue={linkedIssue ? handleViewIssue : null}
+        <EventDetails
+          event={selected}
+          linkedIssue={linkedIssue}
+          onViewIssue={linkedIssue ? handleViewIssue : null}
+        />
+
+        <div className="ops-list-column">
+          <EventList
+            events={acceptedEvents}
+            selectedEventId={selectedEventId}
+            onSelectEvent={onSelectEvent}
           />
-        </aside>
+        </div>
       </div>
 
       <section className="panel secondary-panel">
@@ -108,6 +120,8 @@ export default function OperationsView({
           <TransparencyPanel />
         </div>
       </section>
+
+      <InsightsPanel />
     </main>
   );
 }

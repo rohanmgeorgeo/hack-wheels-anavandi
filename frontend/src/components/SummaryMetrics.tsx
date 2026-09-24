@@ -40,7 +40,7 @@ export default function SummaryMetrics() {
       label: 'Suppressed',
       value: counts.suppressed_total,
       hint: 'false-positive candidates',
-      color: '#8b98a8',
+      color: 'var(--text-3)',
     },
   ];
 
